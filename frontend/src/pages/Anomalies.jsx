@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import DataTable from '../components/DataTable';
+import BarChartWidget from '../components/charts/BarChartWidget';
 import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
 export default function Anomalies() {
@@ -43,6 +44,20 @@ export default function Anomalies() {
         <div className="p-2 bg-orange-50 rounded-lg"><AlertTriangle className="h-6 w-6 text-orange-600" /></div>
         <div><h1 className="text-2xl font-bold text-gray-900">Anomalies</h1><p className="text-gray-500">Detected data anomalies and deviations</p></div>
       </div>
+
+      {data.length > 0 && (
+        <BarChartWidget
+          title="Anomaly Deviations: Expected vs Actual"
+          data={data.filter(a => !a.is_resolved).slice(0, 8).map(a => ({
+            name: a.metric_name?.substring(0, 12) || 'Metric',
+            expected: Number(a.expected_value) || 0,
+            actual: Number(a.actual_value) || 0
+          }))}
+          xKey="name"
+          bars={['expected', 'actual']}
+          height={250}
+        />
+      )}
 
       <DataTable title="All Anomalies" data={data} columns={columns} loading={loading} detailPath="/anomalies" emptyMessage="No anomalies detected" />
     </div>

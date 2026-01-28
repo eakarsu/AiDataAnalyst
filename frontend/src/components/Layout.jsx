@@ -22,7 +22,10 @@ import {
   Menu,
   X,
   ChevronRight,
-  User
+  User,
+  Table2,
+  Users,
+  Settings
 } from 'lucide-react';
 
 const navigation = [
@@ -41,6 +44,9 @@ const navigation = [
   { name: 'Integrations', path: '/integrations', icon: Plug },
   { name: 'Activity Log', path: '/activity', icon: Activity },
   { name: 'AI Assistant', path: '/ai-chat', icon: MessageSquare },
+  { name: 'Data Explorer', path: '/data-explorer', icon: Table2 },
+  { name: 'Team', path: '/team', icon: Users },
+  { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
 export default function Layout() {

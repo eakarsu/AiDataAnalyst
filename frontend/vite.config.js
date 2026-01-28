@@ -13,6 +13,14 @@ export default defineConfig({
       '/auth': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      },
+      '/public': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      },
+      '/exports': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
       }
     }
   }

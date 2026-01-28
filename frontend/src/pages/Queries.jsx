@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import BarChartWidget from '../components/charts/BarChartWidget';
 import { Search, Sparkles, Clock, CheckCircle } from 'lucide-react';
 
 export default function Queries() {
@@ -44,6 +45,19 @@ export default function Queries() {
         <div className="p-2 bg-primary-50 rounded-lg"><Search className="h-6 w-6 text-primary-600" /></div>
         <div><h1 className="text-2xl font-bold text-gray-900">Natural Language Queries</h1><p className="text-gray-500">Ask questions in plain English, get SQL results</p></div>
       </div>
+
+      {data.length > 0 && (
+        <BarChartWidget
+          title="Query Execution Times (ms)"
+          data={data.slice(0, 10).map(q => ({
+            name: q.natural_language_query?.substring(0, 20) + '...',
+            execution_time: q.execution_time || 0
+          }))}
+          xKey="name"
+          bars={['execution_time']}
+          height={200}
+        />
+      )}
 
       <DataTable title="Query History" data={data} columns={columns} loading={loading} detailPath="/queries" onAdd={() => setModalOpen(true)} addLabel="New Query" emptyMessage="No queries yet. Ask your first question!" />
 

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { Database, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import FileUpload from '../components/FileUpload';
+import { Database, CheckCircle, AlertCircle, RefreshCw, Upload } from 'lucide-react';
 
 export default function DataSources() {
   const [data, setData] = useState([]);
@@ -93,6 +94,17 @@ export default function DataSources() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Data Sources</h1>
           <p className="text-gray-500">Manage your connected data sources</p>
+        </div>
+      </div>
+
+      {/* File Upload Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+          <Upload className="h-5 w-5 text-gray-600" />
+          <h2 className="font-semibold text-gray-900">Upload Data File</h2>
+        </div>
+        <div className="p-6">
+          <FileUpload onUploadComplete={() => loadData()} />
         </div>
       </div>
 

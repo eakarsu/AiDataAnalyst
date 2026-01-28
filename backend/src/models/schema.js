@@ -44,10 +44,19 @@ export async function initializeDatabase() {
         description TEXT,
         layout JSONB DEFAULT '{}',
         is_public BOOLEAN DEFAULT false,
+        share_token VARCHAR(64) UNIQUE,
         views INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add share_token column if it doesn't exist (for existing databases)
+    await client.query(`
+      DO $$ BEGIN
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS share_token VARCHAR(64) UNIQUE;
+      EXCEPTION WHEN duplicate_column THEN NULL;
+      END $$;
     `);
 
     // Reports table

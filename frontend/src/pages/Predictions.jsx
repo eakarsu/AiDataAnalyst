@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import AreaChartWidget from '../components/charts/AreaChartWidget';
 import { TrendingUp, ArrowUp, ArrowDown, Minus, Sparkles } from 'lucide-react';
 
 export default function Predictions() {
@@ -46,6 +47,20 @@ export default function Predictions() {
         <div className="p-2 bg-green-50 rounded-lg"><TrendingUp className="h-6 w-6 text-green-600" /></div>
         <div><h1 className="text-2xl font-bold text-gray-900">Predictions</h1><p className="text-gray-500">AI-powered forecasting and predictions</p></div>
       </div>
+
+      {data.length > 0 && (
+        <AreaChartWidget
+          title="Prediction Confidence Intervals"
+          data={data.slice(0, 8).map(p => ({
+            name: p.target_metric?.substring(0, 15) || 'Metric',
+            predicted: Number(p.predicted_value) || 0,
+            confidence: Number(p.accuracy) || 0
+          }))}
+          xKey="name"
+          areas={['predicted', 'confidence']}
+          height={250}
+        />
+      )}
 
       <DataTable title="All Predictions" data={data} columns={columns} loading={loading} detailPath="/predictions" onAdd={() => setModalOpen(true)} addLabel="New Prediction" emptyMessage="No predictions generated yet" />
 

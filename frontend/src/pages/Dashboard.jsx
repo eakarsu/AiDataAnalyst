@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Card from '../components/Card';
+import LineChartWidget from '../components/charts/LineChartWidget';
+import BarChartWidget from '../components/charts/BarChartWidget';
+import PieChartWidget from '../components/charts/PieChartWidget';
 import {
   Database,
   BarChart3,
@@ -110,6 +113,46 @@ export default function Dashboard() {
             href={stat.path}
           />
         ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <LineChartWidget
+          title="Activity Trends"
+          data={[
+            { name: 'Mon', queries: 12, insights: 5 },
+            { name: 'Tue', queries: 19, insights: 8 },
+            { name: 'Wed', queries: 15, insights: 6 },
+            { name: 'Thu', queries: 22, insights: 10 },
+            { name: 'Fri', queries: 18, insights: 7 },
+            { name: 'Sat', queries: 8, insights: 3 },
+            { name: 'Sun', queries: 6, insights: 2 },
+          ]}
+          xKey="name"
+          lines={['queries', 'insights']}
+          height={250}
+        />
+        <BarChartWidget
+          title="Data Sources Comparison"
+          data={[
+            { name: 'PostgreSQL', records: stats?.dataSources > 0 ? 1200 : 0 },
+            { name: 'CSV/Excel', records: stats?.dataSources > 0 ? 850 : 0 },
+            { name: 'API', records: stats?.dataSources > 0 ? 630 : 0 },
+          ]}
+          xKey="name"
+          bars={['records']}
+          height={250}
+        />
+        <PieChartWidget
+          title="Insight Distribution"
+          data={[
+            { name: 'Trends', value: stats?.newInsights > 0 ? 35 : 0 },
+            { name: 'Anomalies', value: stats?.unresolvedAnomalies || 0 },
+            { name: 'Predictions', value: 20 },
+            { name: 'Alerts', value: stats?.activeAlerts || 0 },
+          ]}
+          height={250}
+        />
       </div>
 
       {/* Main Content */}

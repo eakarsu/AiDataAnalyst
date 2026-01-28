@@ -1,7 +1,10 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import pool from '../config/database.js';
 import { authenticateToken } from '../middleware/auth.js';
 import aiService from '../services/aiService.js';
+import cacheService from '../services/cacheService.js';
+import exportService from '../services/exportService.js';
 
 const router = Router();
 
@@ -45,6 +48,7 @@ router.post('/data-sources', async (req, res) => {
       'INSERT INTO data_sources (user_id, name, type, connection_string, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [req.user.id, name, type, connection_string, description]
     );
+    cacheService.invalidateUser(req.user.id);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating data source:', error);
@@ -58,6 +62,7 @@ router.delete('/data-sources/:id', async (req, res) => {
       'DELETE FROM data_sources WHERE id = $1 AND user_id = $2',
       [req.params.id, req.user.id]
     );
+    cacheService.invalidateUser(req.user.id);
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting data source:', error);
@@ -212,6 +217,14 @@ router.get('/insights/:id', async (req, res) => {
 router.post('/insights/generate', async (req, res) => {
   try {
     const { data, context } = req.body;
+
+    // Check cache (TTL: 15 minutes)
+    const cacheKey = `user:${req.user.id}:insight:${crypto.createHash('md5').update(JSON.stringify({ data, context })).digest('hex')}`;
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return res.status(201).json({ ...cached, cached: true });
+    }
+
     const insight = await aiService.generateInsight(data, context);
 
     const result = await pool.query(
@@ -219,6 +232,7 @@ router.post('/insights/generate', async (req, res) => {
       [req.user.id, insight.title, insight.insight_type, insight.content, insight.confidence, insight.impact, JSON.stringify(insight.recommendations)]
     );
 
+    cacheService.set(cacheKey, result.rows[0], 900); // 15 min TTL
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error generating insight:', error);
@@ -274,6 +288,13 @@ router.post('/queries', async (req, res) => {
   try {
     const { natural_language_query } = req.body;
 
+    // Check cache first (TTL: 10 minutes)
+    const cacheKey = `user:${req.user.id}:query:${crypto.createHash('md5').update(natural_language_query).digest('hex')}`;
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return res.status(201).json({ ...cached, cached: true });
+    }
+
     // Generate SQL from natural language using AI
     const schema = `Tables: users, data_sources, dashboards, reports, ai_insights, queries, alerts, predictions, anomalies`;
     const generatedSQL = await aiService.generateSQLFromNaturalLanguage(natural_language_query, schema);
@@ -283,6 +304,7 @@ router.post('/queries', async (req, res) => {
       [req.user.id, natural_language_query, generatedSQL, 'Query generated successfully', 100, 0, 'completed']
     );
 
+    cacheService.set(cacheKey, result.rows[0], 600); // 10 min TTL
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating query:', error);
@@ -393,6 +415,14 @@ router.get('/predictions/:id', async (req, res) => {
 router.post('/predictions/generate', async (req, res) => {
   try {
     const { historical_data, target_metric, period } = req.body;
+
+    // Check cache (TTL: 30 minutes)
+    const cacheKey = `user:${req.user.id}:prediction:${crypto.createHash('md5').update(JSON.stringify({ target_metric, period })).digest('hex')}`;
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return res.status(201).json({ ...cached, cached: true });
+    }
+
     const prediction = await aiService.generatePrediction(historical_data, target_metric, period);
 
     const result = await pool.query(
@@ -400,6 +430,7 @@ router.post('/predictions/generate', async (req, res) => {
       [req.user.id, 'ai_generated', target_metric, period, prediction.predictedValue, JSON.stringify(prediction.confidenceInterval), prediction.accuracy, JSON.stringify(prediction.factors)]
     );
 
+    cacheService.set(cacheKey, result.rows[0], 1800); // 30 min TTL
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error generating prediction:', error);
@@ -493,14 +524,98 @@ router.get('/exports/:id', async (req, res) => {
 
 router.post('/exports', async (req, res) => {
   try {
-    const { report_id, format } = req.body;
+    const { source_id, format } = req.body;
+
+    if (!source_id) {
+      return res.status(400).json({ error: 'Data source is required' });
+    }
+
+    // Get the data source
+    const sourceResult = await pool.query(
+      'SELECT * FROM data_sources WHERE id = $1 AND user_id = $2',
+      [source_id, req.user.id]
+    );
+
+    if (sourceResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Data source not found' });
+    }
+
+    const source = sourceResult.rows[0];
+    const tableName = source.connection_string;
+    const exportTitle = source.name;
+
+    // Fetch actual data from the source table
+    let exportData = [];
+    let columns = [];
+    try {
+      const colResult = await pool.query(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = $1 AND column_name != 'id'
+        ORDER BY ordinal_position
+      `, [tableName]);
+      columns = colResult.rows.map(r => r.column_name);
+
+      const dataResult = await pool.query(`SELECT ${columns.map(c => `"${c}"`).join(', ')} FROM "${tableName}" LIMIT 10000`);
+      exportData = dataResult.rows;
+    } catch (dbErr) {
+      // If table doesn't exist (non-upload source), use source metadata
+      exportData = [{ name: source.name, type: source.type, status: source.status, records: source.record_count }];
+      columns = ['name', 'type', 'status', 'records'];
+    }
+
+    let exportResult;
+    if (format === 'pdf') {
+      exportResult = await exportService.generatePDF({
+        title: exportTitle,
+        metadata: { Source: exportTitle, Format: 'PDF', Rows: exportData.length, Type: source.type },
+        data: exportData,
+        columns,
+        sourceName: source.name
+      });
+    } else {
+      exportResult = await exportService.generateExcel({
+        title: exportTitle,
+        metadata: { Source: exportTitle, Format: format.toUpperCase(), Type: source.type },
+        data: exportData,
+        columns,
+        sourceName: source.name
+      });
+    }
+
     const result = await pool.query(
       'INSERT INTO data_exports (user_id, report_id, format, file_path, file_size, row_count, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [req.user.id, report_id, format, `/exports/export_${Date.now()}.${format}`, 0, 0, 'processing']
+      [req.user.id, null, format, exportResult.fileName, exportResult.fileSize, exportData.length, 'completed']
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating export:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Download export
+router.get('/exports/:id/download', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM data_exports WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Export not found' });
+    }
+
+    const exportRecord = result.rows[0];
+    const filePath = exportService.getFilePath(exportRecord.file_path);
+
+    const fs = await import('fs');
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Export file not found on disk' });
+    }
+
+    res.download(filePath, exportRecord.file_path);
+  } catch (error) {
+    console.error('Error downloading export:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -719,6 +834,54 @@ router.post('/ai/summarize', async (req, res) => {
     res.json({ summary });
   } catch (error) {
     console.error('Error summarizing data:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== DASHBOARD SHARING ====================
+router.post('/dashboards/:id/share', async (req, res) => {
+  try {
+    const shareToken = crypto.randomBytes(32).toString('hex');
+    const result = await pool.query(
+      'UPDATE dashboards SET share_token = $1, is_public = true WHERE id = $2 AND user_id = $3 RETURNING *',
+      [shareToken, req.params.id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Dashboard not found' });
+    }
+
+    res.json({ shareToken, shareUrl: `/public/dashboard/${shareToken}`, dashboard: result.rows[0] });
+  } catch (error) {
+    console.error('Error sharing dashboard:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/dashboards/:id/share', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'UPDATE dashboards SET share_token = NULL, is_public = false WHERE id = $1 AND user_id = $2 RETURNING *',
+      [req.params.id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Dashboard not found' });
+    }
+
+    res.json({ success: true, dashboard: result.rows[0] });
+  } catch (error) {
+    console.error('Error unsharing dashboard:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ==================== CACHE STATS ====================
+router.get('/cache/stats', async (req, res) => {
+  try {
+    res.json(cacheService.getStats());
+  } catch (error) {
+    console.error('Error fetching cache stats:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

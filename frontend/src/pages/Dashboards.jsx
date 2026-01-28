@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { BarChart3, Eye, Globe, Lock } from 'lucide-react';
+import { BarChart3, Eye, Globe, Lock, Share2, Link, Copy } from 'lucide-react';
 
 export default function Dashboards() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', is_public: false });
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [sharing, setSharing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +53,33 @@ export default function Dashboards() {
     }
   };
 
+  const handleShare = async (item) => {
+    setSharing(true);
+    try {
+      const result = await api.shareDashboard(item.id);
+      setShareUrl(`${window.location.origin}/public/dashboard/${result.shareToken}`);
+      setShareModalOpen(true);
+      loadData();
+    } catch (error) {
+      console.error('Error sharing dashboard:', error);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleUnshare = async (item) => {
+    try {
+      await api.unshareDashboard(item.id);
+      loadData();
+    } catch (error) {
+      console.error('Error unsharing dashboard:', error);
+    }
+  };
+
+  const copyShareUrl = () => {
+    navigator.clipboard.writeText(shareUrl);
+  };
+
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'description', label: 'Description', render: (value) => <span className="text-gray-500 truncate max-w-xs block">{value}</span> },
@@ -71,6 +101,21 @@ export default function Dashboards() {
           <Eye className="h-4 w-4 text-gray-400" />
           <span>{value?.toLocaleString() || 0}</span>
         </div>
+      )
+    },
+    {
+      key: 'id',
+      label: 'Share',
+      render: (value, item) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); item.share_token ? handleUnshare(item) : handleShare(item); }}
+          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg transition-colors ${
+            item.share_token ? 'text-green-700 bg-green-50 hover:bg-green-100' : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+          }`}
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          {item.share_token ? 'Shared' : 'Share'}
+        </button>
       )
     }
   ];
@@ -137,6 +182,35 @@ export default function Dashboards() {
             <button type="submit" className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">Create Dashboard</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} title="Share Dashboard">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Anyone with this link can view the dashboard:</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={shareUrl}
+              readOnly
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+            />
+            <button
+              onClick={copyShareUrl}
+              className="p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              title="Copy link"
+            >
+              <Copy className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => setShareModalOpen(false)}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

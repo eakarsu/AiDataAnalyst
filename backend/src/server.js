@@ -6,6 +6,8 @@ import { dirname, join } from 'path';
 
 import authRoutes from './routes/auth.js';
 import apiRoutes from './routes/api.js';
+import uploadRoutes from './routes/upload.js';
+import publicRoutes from './routes/public.js';
 import { initializeDatabase } from './models/schema.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,9 +25,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Static file serving for exports
+app.use('/exports', express.static(join(__dirname, '../exports')));
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/public', publicRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

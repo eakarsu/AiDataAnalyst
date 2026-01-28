@@ -223,10 +223,10 @@ const api = {
     return this.request(`${API_URL}/exports/${id}`);
   },
 
-  createExport(report_id, format) {
+  createExport(source_id, format) {
     return this.request(`${API_URL}/exports`, {
       method: 'POST',
-      body: JSON.stringify({ report_id, format }),
+      body: JSON.stringify({ source_id, format }),
     });
   },
 
@@ -286,6 +286,42 @@ const api = {
   // Activity
   getActivity() {
     return this.request(`${API_URL}/activity`);
+  },
+
+  // Upload
+  getUploadedData(sourceId, page = 1, limit = 50) {
+    return this.request(`${API_URL}/upload/${sourceId}/data?page=${page}&limit=${limit}`);
+  },
+
+  getUploadedColumns(sourceId) {
+    return this.request(`${API_URL}/upload/${sourceId}/columns`);
+  },
+
+  // Dashboard Sharing
+  shareDashboard(id) {
+    return this.request(`${API_URL}/dashboards/${id}/share`, { method: 'POST' });
+  },
+
+  unshareDashboard(id) {
+    return this.request(`${API_URL}/dashboards/${id}/share`, { method: 'DELETE' });
+  },
+
+  // Export Download
+  getExportDownloadUrl(id) {
+    return `${API_URL}/exports/${id}/download`;
+  },
+
+  // Cache Stats
+  getCacheStats() {
+    return this.request(`${API_URL}/cache/stats`);
+  },
+
+  // Password Change
+  changePassword(currentPassword, newPassword) {
+    return this.request(`${AUTH_URL}/password`, {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
   },
 
   // AI Features

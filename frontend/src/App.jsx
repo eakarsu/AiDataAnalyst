@@ -16,6 +16,10 @@ import Templates from './pages/Templates';
 import Integrations from './pages/Integrations';
 import Activity from './pages/Activity';
 import AIChat from './pages/AIChat';
+import Settings from './pages/Settings';
+import DataExplorer from './pages/DataExplorer';
+import Team from './pages/Team';
+import PublicDashboard from './pages/PublicDashboard';
 import Layout from './components/Layout';
 import DetailView from './pages/DetailView';
 
@@ -40,6 +44,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/public/dashboard/:token" element={<PublicDashboard />} />
       <Route
         path="/"
         element={
@@ -63,6 +68,9 @@ function AppRoutes() {
         <Route path="integrations" element={<Integrations />} />
         <Route path="activity" element={<Activity />} />
         <Route path="ai-chat" element={<AIChat />} />
+        <Route path="data-explorer" element={<DataExplorer />} />
+        <Route path="team" element={<Team />} />
+        <Route path="settings" element={<Settings />} />
         <Route path=":type/:id" element={<DetailView />} />
       </Route>
     </Routes>
