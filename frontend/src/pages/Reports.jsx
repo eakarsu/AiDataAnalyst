@@ -1,28 +1,59 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import DataTable from '../components/DataTable';
+import DataList from '../components/DataList';
 import Modal from '../components/Modal';
-import { FileText, Clock, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { FileText, Clock, CheckCircle, Plus } from 'lucide-react';
 
 export default function Reports() {
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', type: 'financial', description: '', schedule: 'weekly' });
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [page, search, sortField, sortOrder]);
 
   const loadData = async () => {
-    try { setData(await api.getReports()); } catch (e) { console.error(e); } finally { setLoading(false); }
+    setLoading(true);
+    try {
+      const result = await api.getReports({ page, limit: 20, search, sort: sortField, order: sortOrder });
+      setItems(result.data || result);
+      setPagination(result.pagination || null);
+    } catch (e) {
+      toast.error('Failed to load reports');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    try { await api.createReport(formData); setModalOpen(false); setFormData({ name: '', type: 'financial', description: '', schedule: 'weekly' }); loadData(); } catch (e) { console.error(e); }
+    try {
+      await api.createReport(formData);
+      setModalOpen(false);
+      setFormData({ name: '', type: 'financial', description: '', schedule: 'weekly' });
+      toast.success('Report created successfully');
+      loadData();
+    } catch (e) {
+      toast.error(e.message || 'Failed to create report');
+    }
   };
 
-  const handleDelete = async (item) => {
-    if (confirm('Delete this report?')) { try { await api.deleteReport(item.id); loadData(); } catch (e) { console.error(e); } }
+  const handleDelete = async (id) => {
+    await api.deleteReport(id);
+  };
+
+  const handleSearch = (value) => { setSearch(value); setPage(1); };
+
+  const handleSort = (field) => {
+    if (sortField === field) { setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }
+    else { setSortField(field); setSortOrder('asc'); }
+    setPage(1);
   };
 
   const columns = [
@@ -38,12 +69,35 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary-50 rounded-lg"><FileText className="h-6 w-6 text-primary-600" /></div>
-        <div><h1 className="text-2xl font-bold text-gray-900">Reports</h1><p className="text-gray-500">Generate and schedule automated reports</p></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary-50 rounded-lg"><FileText className="h-6 w-6 text-primary-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">Reports</h1><p className="text-gray-500">Generate and schedule automated reports</p></div>
+        </div>
+        <button onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <Plus className="h-4 w-4" /> Create Report
+        </button>
       </div>
 
-      <DataTable title="All Reports" data={data} columns={columns} loading={loading} detailPath="/reports" onAdd={() => setModalOpen(true)} addLabel="Create Report" onDelete={handleDelete} emptyMessage="No reports created yet" />
+      <DataList
+        title="All Reports"
+        icon={FileText}
+        iconColor="green"
+        items={items}
+        columns={columns}
+        loading={loading}
+        entityType="reports"
+        detailType="reports"
+        pagination={pagination}
+        onPageChange={setPage}
+        onSearch={handleSearch}
+        onSort={handleSort}
+        onDelete={handleDelete}
+        onRefresh={loadData}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        searchValue={search}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create Report">
         <form onSubmit={handleAdd} className="space-y-4">

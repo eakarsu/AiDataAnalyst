@@ -11,7 +11,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token) {
       api.setToken(token);
-      // Validate token by fetching user stats
       api.getStats()
         .then(() => {
           const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -46,12 +45,18 @@ export function AuthProvider({ children }) {
     return response;
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    api.setToken(null);
+  const logout = async () => {
+    try {
+      if (token) {
+        await api.logout().catch(() => {});
+      }
+    } finally {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      api.setToken(null);
+    }
   };
 
   return (

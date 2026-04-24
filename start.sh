@@ -2,6 +2,7 @@
 
 # AI Data Analyst - Start Script
 # This script cleans up ports, sets up the database, seeds data, and starts the application
+# Features: Hot reload monitoring for code changes
 
 set -e
 
@@ -15,11 +16,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
 BACKEND_PORT=3001
-FRONTEND_PORT=5173
+FRONTEND_PORT=3000
 DB_NAME="ai_data_analyst"
 DB_USER="postgres"
 DB_PASSWORD="postgres"
@@ -43,6 +46,10 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+print_feature() {
+    echo -e "${PURPLE}[FEATURE]${NC} $1"
+}
+
 # Function to clean up ports
 cleanup_ports() {
     print_status "Cleaning up ports..."
@@ -58,6 +65,13 @@ cleanup_ports() {
     if lsof -i :$FRONTEND_PORT > /dev/null 2>&1; then
         print_warning "Port $FRONTEND_PORT is in use. Killing process..."
         kill -9 $(lsof -t -i :$FRONTEND_PORT) 2>/dev/null || true
+        sleep 1
+    fi
+
+    # Also check port 5000 and kill if in use (avoiding conflicts)
+    if lsof -i :5000 > /dev/null 2>&1; then
+        print_warning "Port 5000 is in use. Killing process..."
+        kill -9 $(lsof -t -i :5000) 2>/dev/null || true
         sleep 1
     fi
 
@@ -136,24 +150,43 @@ seed_database() {
     print_success "Database seeded with 15+ items per feature"
 }
 
-# Function to start the application
+# Function to display features
+display_features() {
+    echo ""
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "${CYAN}         AI Features Available${NC}"
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
+    print_feature "AI Query Builder - Natural language to SQL"
+    print_feature "AI Query Optimizer - Database query optimization"
+    print_feature "AI Anomaly Detector - Detect data anomalies"
+    print_feature "AI Log Analyzer - DevOps log analysis"
+    print_feature "AI Dashboard Generator - Generate dashboards with AI"
+    print_feature "AI Insight Narrator - Transform insights to narratives"
+    print_feature "AI Data Quality Scorer - Score data quality"
+    print_feature "AI Predictions - ML-powered forecasting"
+    print_feature "AI Chat Assistant - Interactive data assistant"
+    echo ""
+}
+
+# Function to start the application with hot reload
 start_application() {
-    print_status "Starting the application..."
+    print_status "Starting the application with hot reload..."
 
     cd "$(dirname "$0")"
 
-    # Start backend in background
-    print_status "Starting backend server on port $BACKEND_PORT..."
+    # Start backend with nodemon for hot reload
+    print_status "Starting backend server on port $BACKEND_PORT (hot reload enabled)..."
     cd backend
-    npm start &
+    npm run dev &
     BACKEND_PID=$!
     cd ..
 
     # Wait for backend to be ready
     sleep 3
 
-    # Start frontend in background
-    print_status "Starting frontend server on port $FRONTEND_PORT..."
+    # Start frontend with Vite (has built-in hot reload)
+    print_status "Starting frontend server on port $FRONTEND_PORT (hot reload enabled)..."
     cd frontend
     npm run dev &
     FRONTEND_PID=$!
@@ -162,7 +195,8 @@ start_application() {
     # Wait for frontend to be ready
     sleep 3
 
-    echo ""
+    display_features
+
     echo "========================================"
     print_success "Application started successfully!"
     echo "========================================"
@@ -173,6 +207,8 @@ start_application() {
     echo -e "${YELLOW}Demo Credentials:${NC}"
     echo "  Email:    demo@aianalyst.com"
     echo "  Password: demo123456"
+    echo ""
+    echo -e "${CYAN}Hot Reload:${NC} Changes to your code will automatically reload!"
     echo ""
     echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
     echo ""

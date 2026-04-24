@@ -28,6 +28,11 @@ const api = {
       throw new Error(error.error || 'Request failed');
     }
 
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/csv')) {
+      return response.text();
+    }
+
     return response.json();
   },
 
@@ -50,14 +55,48 @@ const api = {
     return this.request(`${AUTH_URL}/demo-credentials`);
   },
 
+  logout() {
+    return this.request(`${AUTH_URL}/logout`, { method: 'POST' });
+  },
+
+  forgotPassword(email) {
+    return this.request(`${AUTH_URL}/forgot-password`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  resetPassword(token, newPassword) {
+    return this.request(`${AUTH_URL}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
+
+  verifyEmail(token) {
+    return this.request(`${AUTH_URL}/verify-email`, {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  },
+
+  resendVerification() {
+    return this.request(`${AUTH_URL}/resend-verification`, { method: 'POST' });
+  },
+
+  getMe() {
+    return this.request(`${AUTH_URL}/me`);
+  },
+
   // Stats
   getStats() {
     return this.request(`${API_URL}/stats`);
   },
 
   // Data Sources
-  getDataSources() {
-    return this.request(`${API_URL}/data-sources`);
+  getDataSources(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/data-sources${qs ? '?' + qs : ''}`);
   },
 
   getDataSource(id) {
@@ -76,8 +115,9 @@ const api = {
   },
 
   // Dashboards
-  getDashboards() {
-    return this.request(`${API_URL}/dashboards`);
+  getDashboards(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/dashboards${qs ? '?' + qs : ''}`);
   },
 
   getDashboard(id) {
@@ -96,8 +136,9 @@ const api = {
   },
 
   // Reports
-  getReports() {
-    return this.request(`${API_URL}/reports`);
+  getReports(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/reports${qs ? '?' + qs : ''}`);
   },
 
   getReport(id) {
@@ -116,8 +157,9 @@ const api = {
   },
 
   // Insights
-  getInsights() {
-    return this.request(`${API_URL}/insights`);
+  getInsights(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/insights${qs ? '?' + qs : ''}`);
   },
 
   getInsight(id) {
@@ -139,8 +181,9 @@ const api = {
   },
 
   // Queries
-  getQueries() {
-    return this.request(`${API_URL}/queries`);
+  getQueries(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/queries${qs ? '?' + qs : ''}`);
   },
 
   getQuery(id) {
@@ -155,8 +198,9 @@ const api = {
   },
 
   // Alerts
-  getAlerts() {
-    return this.request(`${API_URL}/alerts`);
+  getAlerts(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/alerts${qs ? '?' + qs : ''}`);
   },
 
   getAlert(id) {
@@ -179,8 +223,9 @@ const api = {
   },
 
   // Predictions
-  getPredictions() {
-    return this.request(`${API_URL}/predictions`);
+  getPredictions(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/predictions${qs ? '?' + qs : ''}`);
   },
 
   getPrediction(id) {
@@ -195,8 +240,9 @@ const api = {
   },
 
   // Anomalies
-  getAnomalies() {
-    return this.request(`${API_URL}/anomalies`);
+  getAnomalies(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/anomalies${qs ? '?' + qs : ''}`);
   },
 
   getAnomaly(id) {
@@ -207,6 +253,13 @@ const api = {
     return this.request(`${API_URL}/anomalies/${id}/resolve`, { method: 'PATCH' });
   },
 
+  createAnomaly(data) {
+    return this.request(`${API_URL}/anomalies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   analyzeAnomaly(data) {
     return this.request(`${API_URL}/anomalies/analyze`, {
       method: 'POST',
@@ -215,8 +268,9 @@ const api = {
   },
 
   // Exports
-  getExports() {
-    return this.request(`${API_URL}/exports`);
+  getExports(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/exports${qs ? '?' + qs : ''}`);
   },
 
   getExport(id) {
@@ -231,8 +285,9 @@ const api = {
   },
 
   // Jobs
-  getJobs() {
-    return this.request(`${API_URL}/jobs`);
+  getJobs(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/jobs${qs ? '?' + qs : ''}`);
   },
 
   getJob(id) {
@@ -264,8 +319,9 @@ const api = {
   },
 
   // Integrations
-  getIntegrations() {
-    return this.request(`${API_URL}/integrations`);
+  getIntegrations(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/integrations${qs ? '?' + qs : ''}`);
   },
 
   getIntegration(id) {
@@ -351,6 +407,260 @@ const api = {
       method: 'POST',
       body: JSON.stringify({ data, format }),
     });
+  },
+
+  // Query Optimizer
+  getQueryOptimizations(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/query-optimizations${qs ? '?' + qs : ''}`);
+  },
+
+  getQueryOptimization(id) {
+    return this.request(`${API_URL}/query-optimizations/${id}`);
+  },
+
+  createQueryOptimization(data) {
+    return this.request(`${API_URL}/query-optimizations`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteQueryOptimization(id) {
+    return this.request(`${API_URL}/query-optimizations/${id}`, { method: 'DELETE' });
+  },
+
+  // Log Analyzer
+  getLogEntries(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/log-entries${qs ? '?' + qs : ''}`);
+  },
+
+  getLogEntry(id) {
+    return this.request(`${API_URL}/log-entries/${id}`);
+  },
+
+  createLogEntry(data) {
+    return this.request(`${API_URL}/log-entries`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteLogEntry(id) {
+    return this.request(`${API_URL}/log-entries/${id}`, { method: 'DELETE' });
+  },
+
+  getLogAnalyses(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/log-analysis${qs ? '?' + qs : ''}`);
+  },
+
+  getLogAnalysis(id) {
+    return this.request(`${API_URL}/log-analysis/${id}`);
+  },
+
+  createLogAnalysis(data) {
+    return this.request(`${API_URL}/log-analysis`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteLogAnalysis(id) {
+    return this.request(`${API_URL}/log-analysis/${id}`, { method: 'DELETE' });
+  },
+
+  // Dashboard Generator
+  getDashboardConfigs() {
+    return this.request(`${API_URL}/dashboard-configs`);
+  },
+
+  getDashboardConfig(id) {
+    return this.request(`${API_URL}/dashboard-configs/${id}`);
+  },
+
+  generateDashboardConfig(data) {
+    return this.request(`${API_URL}/dashboard-configs/generate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteDashboardConfig(id) {
+    return this.request(`${API_URL}/dashboard-configs/${id}`, { method: 'DELETE' });
+  },
+
+  // Data Quality
+  getDataQualityScores() {
+    return this.request(`${API_URL}/data-quality`);
+  },
+
+  getDataQualityScore(id) {
+    return this.request(`${API_URL}/data-quality/${id}`);
+  },
+
+  analyzeDataQuality(data) {
+    return this.request(`${API_URL}/data-quality/analyze`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteDataQualityScore(id) {
+    return this.request(`${API_URL}/data-quality/${id}`, { method: 'DELETE' });
+  },
+
+  // Insight Narratives
+  getNarratives() {
+    return this.request(`${API_URL}/narratives`);
+  },
+
+  getNarrative(id) {
+    return this.request(`${API_URL}/narratives/${id}`);
+  },
+
+  generateNarrative(data) {
+    return this.request(`${API_URL}/narratives/generate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteNarrative(id) {
+    return this.request(`${API_URL}/narratives/${id}`, { method: 'DELETE' });
+  },
+
+  // Pipeline Builder
+  getPipelines(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this.request(`${API_URL}/pipelines${qs ? '?' + qs : ''}`);
+  },
+
+  getPipeline(id) {
+    return this.request(`${API_URL}/pipelines/${id}`);
+  },
+
+  generatePipeline(data) {
+    return this.request(`${API_URL}/pipelines/generate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  createPipeline(data) {
+    return this.request(`${API_URL}/pipelines`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updatePipeline(id, data) {
+    return this.request(`${API_URL}/pipelines/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  runPipeline(id) {
+    return this.request(`${API_URL}/pipelines/${id}/run`, {
+      method: 'POST',
+    });
+  },
+
+  getPipelineRuns(id) {
+    return this.request(`${API_URL}/pipelines/${id}/runs`);
+  },
+
+  deletePipeline(id) {
+    return this.request(`${API_URL}/pipelines/${id}`, { method: 'DELETE' });
+  },
+
+  // Update methods
+  updateDataSource(id, data) {
+    return this.request(`${API_URL}/data-sources/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateDashboard(id, data) {
+    return this.request(`${API_URL}/dashboards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateReport(id, data) {
+    return this.request(`${API_URL}/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateAlert(id, data) {
+    return this.request(`${API_URL}/alerts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateJob(id, data) {
+    return this.request(`${API_URL}/jobs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateIntegration(id, data) {
+    return this.request(`${API_URL}/integrations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteInsight(id) {
+    return this.request(`${API_URL}/insights/${id}`, { method: 'DELETE' });
+  },
+
+  deleteQuery(id) {
+    return this.request(`${API_URL}/queries/${id}`, { method: 'DELETE' });
+  },
+
+  deletePrediction(id) {
+    return this.request(`${API_URL}/predictions/${id}`, { method: 'DELETE' });
+  },
+
+  deleteAnomaly(id) {
+    return this.request(`${API_URL}/anomalies/${id}`, { method: 'DELETE' });
+  },
+
+  deleteExport(id) {
+    return this.request(`${API_URL}/exports/${id}`, { method: 'DELETE' });
+  },
+
+  // Bulk operations
+  bulkDelete(entityType, ids) {
+    return this.request(`${API_URL}/bulk-delete/${entityType}`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+  },
+
+  bulkUpdate(entityType, ids, updates) {
+    return this.request(`${API_URL}/bulk-update/${entityType}`, {
+      method: 'POST',
+      body: JSON.stringify({ ids, updates }),
+    });
+  },
+
+  // CSV/PDF export
+  exportCSV(entityType) {
+    return this.request(`${API_URL}/export-csv/${entityType}`);
+  },
+
+  exportPDF(entityType) {
+    return this.request(`${API_URL}/export-pdf/${entityType}`);
   },
 };
 

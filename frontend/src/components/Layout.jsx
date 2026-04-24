@@ -25,7 +25,13 @@ import {
   User,
   Table2,
   Users,
-  Settings
+  Settings,
+  Zap,
+  ScrollText,
+  Wand2,
+  ShieldCheck,
+  BookOpen,
+  GitBranch
 } from 'lucide-react';
 
 const navigation = [
@@ -35,6 +41,12 @@ const navigation = [
   { name: 'Reports', path: '/reports', icon: FileText },
   { name: 'AI Insights', path: '/insights', icon: Lightbulb },
   { name: 'Queries', path: '/queries', icon: Search },
+  { name: 'Query Optimizer', path: '/query-optimizer', icon: Zap },
+  { name: 'Log Analyzer', path: '/log-analyzer', icon: ScrollText },
+  { name: 'Dashboard Generator', path: '/dashboard-generator', icon: Wand2 },
+  { name: 'Data Quality', path: '/data-quality', icon: ShieldCheck },
+  { name: 'Narratives', path: '/narratives', icon: BookOpen },
+  { name: 'Pipeline Builder', path: '/pipeline-builder', icon: GitBranch },
   { name: 'Alerts', path: '/alerts', icon: Bell },
   { name: 'Predictions', path: '/predictions', icon: TrendingUp },
   { name: 'Anomalies', path: '/anomalies', icon: AlertTriangle },

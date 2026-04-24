@@ -1,27 +1,64 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import DataTable from '../components/DataTable';
+import DataList from '../components/DataList';
 import Modal from '../components/Modal';
 import BarChartWidget from '../components/charts/BarChartWidget';
-import { Search, Sparkles, Clock, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Search, Sparkles, Clock, CheckCircle, Plus } from 'lucide-react';
 
 export default function Queries() {
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [page, search, sortField, sortOrder]);
 
   const loadData = async () => {
-    try { setData(await api.getQueries()); } catch (e) { console.error(e); } finally { setLoading(false); }
+    setLoading(true);
+    try {
+      const result = await api.getQueries({ page, limit: 20, search, sort: sortField, order: sortOrder });
+      setItems(result.data || result);
+      setPagination(result.pagination || null);
+    } catch (e) {
+      toast.error('Failed to load queries');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleQuery = async (e) => {
     e.preventDefault();
     setGenerating(true);
-    try { await api.createQuery(query); setModalOpen(false); setQuery(''); loadData(); } catch (e) { console.error(e); } finally { setGenerating(false); }
+    try {
+      await api.createQuery(query);
+      setModalOpen(false);
+      setQuery('');
+      toast.success('Query executed successfully');
+      loadData();
+    } catch (e) {
+      toast.error(e.message || 'Query failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    await api.deleteQuery(id);
+  };
+
+  const handleSearch = (value) => { setSearch(value); setPage(1); };
+
+  const handleSort = (field) => {
+    if (sortField === field) { setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }
+    else { setSortField(field); setSortOrder('asc'); }
+    setPage(1);
   };
 
   const columns = [
@@ -41,15 +78,20 @@ export default function Queries() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary-50 rounded-lg"><Search className="h-6 w-6 text-primary-600" /></div>
-        <div><h1 className="text-2xl font-bold text-gray-900">Natural Language Queries</h1><p className="text-gray-500">Ask questions in plain English, get SQL results</p></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary-50 rounded-lg"><Search className="h-6 w-6 text-primary-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">Natural Language Queries</h1><p className="text-gray-500">Ask questions in plain English, get SQL results</p></div>
+        </div>
+        <button onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <Plus className="h-4 w-4" /> New Query
+        </button>
       </div>
 
-      {data.length > 0 && (
+      {items.length > 0 && (
         <BarChartWidget
           title="Query Execution Times (ms)"
-          data={data.slice(0, 10).map(q => ({
+          data={items.slice(0, 10).map(q => ({
             name: q.natural_language_query?.substring(0, 20) + '...',
             execution_time: q.execution_time || 0
           }))}
@@ -59,7 +101,25 @@ export default function Queries() {
         />
       )}
 
-      <DataTable title="Query History" data={data} columns={columns} loading={loading} detailPath="/queries" onAdd={() => setModalOpen(true)} addLabel="New Query" emptyMessage="No queries yet. Ask your first question!" />
+      <DataList
+        title="Query History"
+        icon={Search}
+        iconColor="blue"
+        items={items}
+        columns={columns}
+        loading={loading}
+        entityType="queries"
+        detailType="queries"
+        pagination={pagination}
+        onPageChange={setPage}
+        onSearch={handleSearch}
+        onSort={handleSort}
+        onDelete={handleDelete}
+        onRefresh={loadData}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        searchValue={search}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Ask a Question" size="lg">
         <form onSubmit={handleQuery} className="space-y-4">

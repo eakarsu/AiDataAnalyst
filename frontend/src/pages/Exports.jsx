@@ -1,25 +1,41 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import DataTable from '../components/DataTable';
+import DataList from '../components/DataList';
 import Modal from '../components/Modal';
-import { Download, FileText, FileSpreadsheet, FileJson, File } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Download, FileText, FileSpreadsheet, FileJson, File, Plus } from 'lucide-react';
 
 export default function Exports() {
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [dataSources, setDataSources] = useState([]);
   const [formData, setFormData] = useState({ source_id: '', format: 'xlsx' });
   const [exporting, setExporting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [page, search, sortField, sortOrder]);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      const [exportsData, sourcesData] = await Promise.all([api.getExports(), api.getDataSources()]);
-      setData(exportsData);
-      setDataSources(sourcesData);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+      const [exportsResult, sourcesData] = await Promise.all([
+        api.getExports({ page, limit: 20, search, sort: sortField, order: sortOrder }),
+        api.getDataSources()
+      ]);
+      setItems(exportsResult.data || exportsResult);
+      setPagination(exportsResult.pagination || null);
+      const srcList = sourcesData.data || sourcesData;
+      setDataSources(Array.isArray(srcList) ? srcList : []);
+    } catch (e) {
+      toast.error('Failed to load exports');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = async (e) => {
@@ -29,8 +45,25 @@ export default function Exports() {
       await api.createExport(formData.source_id, formData.format);
       setModalOpen(false);
       setFormData({ source_id: '', format: 'xlsx' });
+      toast.success('Export started successfully');
       loadData();
-    } catch (e) { console.error(e); } finally { setExporting(false); }
+    } catch (e) {
+      toast.error(e.message || 'Failed to create export');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    await api.deleteExport(id);
+  };
+
+  const handleSearch = (value) => { setSearch(value); setPage(1); };
+
+  const handleSort = (field) => {
+    if (sortField === field) { setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }
+    else { setSortField(field); setSortOrder('asc'); }
+    setPage(1);
   };
 
   const getFormatIcon = (format) => {
@@ -63,8 +96,9 @@ export default function Exports() {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+      toast.success('Download started');
     } catch (e) {
-      console.error('Download error:', e);
+      toast.error('Download failed');
     }
   };
 
@@ -78,62 +112,62 @@ export default function Exports() {
     { key: 'row_count', label: 'Rows', render: (v) => v?.toLocaleString() || '0' },
     { key: 'status', label: 'Status', render: (v) => <span className={`capitalize ${v === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>{v}</span> },
     { key: 'created_at', label: 'Created', render: (v) => new Date(v).toLocaleDateString() },
-    {
-      key: 'id',
-      label: 'Download',
-      render: (v, item) => item.status === 'completed' ? (
-        <button
-          onClick={(e) => { e.stopPropagation(); handleDownload(item); }}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Download
-        </button>
-      ) : (
-        <span className="text-xs text-gray-400">Processing...</span>
-      )
-    }
+    { key: 'id', label: 'Download', render: (v, item) => item.status === 'completed' ? (
+      <button onClick={(e) => { e.stopPropagation(); handleDownload(item); }} className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
+        <Download className="h-3.5 w-3.5" /> Download
+      </button>
+    ) : (
+      <span className="text-xs text-gray-400">Processing...</span>
+    )}
   ];
 
   const formats = ['xlsx', 'pdf'];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-purple-50 rounded-lg"><Download className="h-6 w-6 text-purple-600" /></div>
-        <div><h1 className="text-2xl font-bold text-gray-900">Data Exports</h1><p className="text-gray-500">Export your data in various formats</p></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-purple-50 rounded-lg"><Download className="h-6 w-6 text-purple-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">Data Exports</h1><p className="text-gray-500">Export your data in various formats</p></div>
+        </div>
+        <button onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <Plus className="h-4 w-4" /> New Export
+        </button>
       </div>
 
-      <DataTable title="Export History" data={data} columns={columns} loading={loading} detailPath="/exports" onAdd={() => setModalOpen(true)} addLabel="New Export" emptyMessage="No exports yet" />
+      <DataList
+        title="Export History"
+        icon={Download}
+        iconColor="purple"
+        items={items}
+        columns={columns}
+        loading={loading}
+        entityType="exports"
+        detailType="exports"
+        pagination={pagination}
+        onPageChange={setPage}
+        onSearch={handleSearch}
+        onSort={handleSort}
+        onDelete={handleDelete}
+        onRefresh={loadData}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        searchValue={search}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Export Data Source">
         <form onSubmit={handleAdd} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Data Source</label>
-            <select
-              value={formData.source_id}
-              onChange={(e) => setFormData({ ...formData, source_id: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              required
-            >
+            <select value={formData.source_id} onChange={(e) => setFormData({ ...formData, source_id: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" required>
               <option value="">Select a data source...</option>
-              {dataSources.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.record_count?.toLocaleString() || 0} rows)
-                </option>
-              ))}
+              {dataSources.map(s => (<option key={s.id} value={s.id}>{s.name} ({s.record_count?.toLocaleString() || 0} rows)</option>))}
             </select>
-            {dataSources.length === 0 && (
-              <p className="text-xs text-gray-500 mt-1">No data sources available. Upload a CSV/Excel file on the Data Sources page first.</p>
-            )}
+            {dataSources.length === 0 && (<p className="text-xs text-gray-500 mt-1">No data sources available. Upload a CSV/Excel file on the Data Sources page first.</p>)}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
-            <select
-              value={formData.format}
-              onChange={(e) => setFormData({ ...formData, format: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            >
+            <select value={formData.format} onChange={(e) => setFormData({ ...formData, format: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
               {formats.map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
             </select>
           </div>

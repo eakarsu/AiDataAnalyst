@@ -1,32 +1,69 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import DataTable from '../components/DataTable';
+import DataList from '../components/DataList';
 import Modal from '../components/Modal';
-import { Calendar, Play, Pause, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Calendar, Play, Pause, Plus } from 'lucide-react';
 
 export default function Jobs() {
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({ job_name: '', job_type: 'report', cron_expression: '0 8 * * *' });
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [page, search, sortField, sortOrder]);
 
   const loadData = async () => {
-    try { setData(await api.getJobs()); } catch (e) { console.error(e); } finally { setLoading(false); }
+    setLoading(true);
+    try {
+      const result = await api.getJobs({ page, limit: 20, search, sort: sortField, order: sortOrder });
+      setItems(result.data || result);
+      setPagination(result.pagination || null);
+    } catch (e) {
+      toast.error('Failed to load jobs');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    try { await api.createJob(formData); setModalOpen(false); setFormData({ job_name: '', job_type: 'report', cron_expression: '0 8 * * *' }); loadData(); } catch (e) { console.error(e); }
+    try {
+      await api.createJob(formData);
+      setModalOpen(false);
+      setFormData({ job_name: '', job_type: 'report', cron_expression: '0 8 * * *' });
+      toast.success('Job created successfully');
+      loadData();
+    } catch (e) {
+      toast.error(e.message || 'Failed to create job');
+    }
   };
 
   const handleToggle = async (item) => {
-    try { await api.toggleJob(item.id); loadData(); } catch (e) { console.error(e); }
+    try {
+      await api.toggleJob(item.id);
+      toast.success(`Job ${item.status === 'active' ? 'paused' : 'activated'}`);
+      loadData();
+    } catch (e) {
+      toast.error('Failed to toggle job');
+    }
   };
 
-  const handleDelete = async (item) => {
-    if (confirm('Delete this job?')) { try { await api.deleteJob(item.id); loadData(); } catch (e) { console.error(e); } }
+  const handleDelete = async (id) => {
+    await api.deleteJob(id);
+  };
+
+  const handleSearch = (value) => { setSearch(value); setPage(1); };
+
+  const handleSort = (field) => {
+    if (sortField === field) { setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }
+    else { setSortField(field); setSortOrder('asc'); }
+    setPage(1);
   };
 
   const columns = [
@@ -52,12 +89,35 @@ export default function Jobs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-blue-50 rounded-lg"><Calendar className="h-6 w-6 text-blue-600" /></div>
-        <div><h1 className="text-2xl font-bold text-gray-900">Scheduled Jobs</h1><p className="text-gray-500">Automate recurring tasks</p></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 rounded-lg"><Calendar className="h-6 w-6 text-blue-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">Scheduled Jobs</h1><p className="text-gray-500">Automate recurring tasks</p></div>
+        </div>
+        <button onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <Plus className="h-4 w-4" /> Create Job
+        </button>
       </div>
 
-      <DataTable title="All Jobs" data={data} columns={columns} loading={loading} detailPath="/jobs" onAdd={() => setModalOpen(true)} addLabel="Create Job" onDelete={handleDelete} emptyMessage="No scheduled jobs yet" />
+      <DataList
+        title="All Jobs"
+        icon={Calendar}
+        iconColor="blue"
+        items={items}
+        columns={columns}
+        loading={loading}
+        entityType="jobs"
+        detailType="jobs"
+        pagination={pagination}
+        onPageChange={setPage}
+        onSearch={handleSearch}
+        onSort={handleSort}
+        onDelete={handleDelete}
+        onRefresh={loadData}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        searchValue={search}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create Scheduled Job">
         <form onSubmit={handleAdd} className="space-y-4">

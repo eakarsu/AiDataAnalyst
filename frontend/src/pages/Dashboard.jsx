@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Card from '../components/Card';
+import { CardSkeleton } from '../components/LoadingSkeleton';
 import LineChartWidget from '../components/charts/LineChartWidget';
 import BarChartWidget from '../components/charts/BarChartWidget';
 import PieChartWidget from '../components/charts/PieChartWidget';
@@ -15,7 +16,21 @@ import {
   TrendingUp,
   Activity,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Zap,
+  ScrollText,
+  ShieldCheck,
+  Wand2,
+  BookOpen,
+  Search,
+  Download,
+  Calendar,
+  Palette,
+  Plug,
+  MessageSquare,
+  Table2,
+  Users,
+  Settings
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -37,8 +52,10 @@ export default function Dashboard() {
         api.getAnomalies()
       ]);
       setStats(statsData);
-      setRecentInsights(insightsData.slice(0, 5));
-      setRecentAnomalies(anomaliesData.filter(a => !a.is_resolved).slice(0, 5));
+      const insightsArr = insightsData?.data || insightsData || [];
+      const anomaliesArr = anomaliesData?.data || anomaliesData || [];
+      setRecentInsights(Array.isArray(insightsArr) ? insightsArr.slice(0, 5) : []);
+      setRecentAnomalies(Array.isArray(anomaliesArr) ? anomaliesArr.filter(a => !a.is_resolved).slice(0, 5) : []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -48,11 +65,14 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-500 mt-1">Welcome to your AI-powered analytics hub</p>
+          </div>
         </div>
+        <CardSkeleton count={6} />
       </div>
     );
   }
@@ -64,6 +84,34 @@ export default function Dashboard() {
     { title: 'New Insights', value: stats?.newInsights || 0, icon: Lightbulb, path: '/insights', color: 'yellow' },
     { title: 'Active Alerts', value: stats?.activeAlerts || 0, icon: Bell, path: '/alerts', color: 'red' },
     { title: 'Anomalies', value: stats?.unresolvedAnomalies || 0, icon: AlertTriangle, path: '/anomalies', color: 'orange' },
+  ];
+
+  const aiFeatures = [
+    { title: 'Query Optimizer', description: 'Optimize SQL queries with AI', icon: Zap, path: '/query-optimizer', color: 'yellow' },
+    { title: 'Log Analyzer', description: 'Analyze logs with DevOps AI', icon: ScrollText, path: '/log-analyzer', color: 'indigo' },
+    { title: 'Dashboard Generator', description: 'Generate dashboards with AI', icon: Wand2, path: '/dashboard-generator', color: 'pink' },
+    { title: 'Data Quality', description: 'Score your data quality', icon: ShieldCheck, path: '/data-quality', color: 'emerald' },
+    { title: 'Narratives', description: 'Transform insights to stories', icon: BookOpen, path: '/narratives', color: 'rose' },
+  ];
+
+  const allMenuItems = [
+    { title: 'Data Sources', description: 'Manage connected databases', icon: Database, path: '/data-sources', color: 'blue' },
+    { title: 'Dashboards', description: 'View and create dashboards', icon: BarChart3, path: '/dashboards', color: 'purple' },
+    { title: 'Reports', description: 'Business intelligence reports', icon: FileText, path: '/reports', color: 'green' },
+    { title: 'AI Insights', description: 'AI-generated insights', icon: Lightbulb, path: '/insights', color: 'yellow' },
+    { title: 'Queries', description: 'Natural language queries', icon: Search, path: '/queries', color: 'blue' },
+    { title: 'Alerts', description: 'Alert management', icon: Bell, path: '/alerts', color: 'red' },
+    { title: 'Predictions', description: 'ML predictions', icon: TrendingUp, path: '/predictions', color: 'green' },
+    { title: 'Anomalies', description: 'Anomaly detection', icon: AlertTriangle, path: '/anomalies', color: 'orange' },
+    { title: 'Exports', description: 'Data export management', icon: Download, path: '/exports', color: 'purple' },
+    { title: 'Scheduled Jobs', description: 'Automated tasks', icon: Calendar, path: '/jobs', color: 'blue' },
+    { title: 'Templates', description: 'Dashboard templates', icon: Palette, path: '/templates', color: 'pink' },
+    { title: 'Integrations', description: 'Third-party services', icon: Plug, path: '/integrations', color: 'indigo' },
+    { title: 'Activity Log', description: 'User activity tracking', icon: Activity, path: '/activity', color: 'gray' },
+    { title: 'AI Assistant', description: 'Chat with your data', icon: MessageSquare, path: '/ai-chat', color: 'blue' },
+    { title: 'Data Explorer', description: 'Explore uploaded data', icon: Table2, path: '/data-explorer', color: 'green' },
+    { title: 'Team', description: 'Team management', icon: Users, path: '/team', color: 'purple' },
+    { title: 'Settings', description: 'Application settings', icon: Settings, path: '/settings', color: 'gray' },
   ];
 
   const getImpactColor = (impact) => {
@@ -102,16 +150,24 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Clickable cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {quickStats.map((stat) => (
-          <Card
+          <div
             key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            href={stat.path}
-          />
+            onClick={() => navigate(stat.path)}
+            className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-primary-300 cursor-pointer transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg bg-${stat.color}-50 group-hover:scale-110 transition-transform`}>
+                <stat.icon className={`h-5 w-5 text-${stat.color}-600`} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{stat.title}</p>
+                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
@@ -157,7 +213,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent AI Insights */}
+        {/* Recent AI Insights - Clickable rows */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -200,7 +256,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Active Anomalies */}
+        {/* Active Anomalies - Clickable rows */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -246,6 +302,46 @@ export default function Dashboard() {
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      {/* AI Features - Clickable cards */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">AI-Powered Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {aiFeatures.map((feature) => (
+            <div
+              key={feature.title}
+              onClick={() => navigate(feature.path)}
+              className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-primary-300 cursor-pointer transition-all group"
+            >
+              <div className={`p-2 rounded-lg bg-${feature.color}-50 w-fit mb-3 group-hover:scale-110 transition-transform`}>
+                <feature.icon className={`h-5 w-5 text-${feature.color}-600`} />
+              </div>
+              <h3 className="font-medium text-gray-900">{feature.title}</h3>
+              <p className="text-sm text-gray-500 mt-1">{feature.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* All Menu Items - Clickable card grid */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">All Features</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          {allMenuItems.map((item) => (
+            <div
+              key={item.title}
+              onClick={() => navigate(item.path)}
+              className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-primary-300 cursor-pointer transition-all group"
+            >
+              <div className={`p-1.5 rounded-lg bg-${item.color}-50 w-fit mb-2 group-hover:scale-110 transition-transform`}>
+                <item.icon className={`h-4 w-4 text-${item.color}-600`} />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">{item.title}</h3>
+              <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
+            </div>
+          ))}
         </div>
       </div>
 

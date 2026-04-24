@@ -1,32 +1,69 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import DataTable from '../components/DataTable';
+import DataList from '../components/DataList';
 import Modal from '../components/Modal';
-import { Bell, ToggleLeft, ToggleRight, Mail, MessageSquare } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Bell, ToggleLeft, ToggleRight, Plus } from 'lucide-react';
 
 export default function Alerts() {
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', condition: '', threshold: '', frequency: 'hourly' });
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [page, search, sortField, sortOrder]);
 
   const loadData = async () => {
-    try { setData(await api.getAlerts()); } catch (e) { console.error(e); } finally { setLoading(false); }
+    setLoading(true);
+    try {
+      const result = await api.getAlerts({ page, limit: 20, search, sort: sortField, order: sortOrder });
+      setItems(result.data || result);
+      setPagination(result.pagination || null);
+    } catch (e) {
+      toast.error('Failed to load alerts');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    try { await api.createAlert(formData); setModalOpen(false); setFormData({ name: '', condition: '', threshold: '', frequency: 'hourly' }); loadData(); } catch (e) { console.error(e); }
+    try {
+      await api.createAlert(formData);
+      setModalOpen(false);
+      setFormData({ name: '', condition: '', threshold: '', frequency: 'hourly' });
+      toast.success('Alert created successfully');
+      loadData();
+    } catch (e) {
+      toast.error(e.message || 'Failed to create alert');
+    }
   };
 
   const handleToggle = async (item) => {
-    try { await api.toggleAlert(item.id); loadData(); } catch (e) { console.error(e); }
+    try {
+      await api.toggleAlert(item.id);
+      toast.success(`Alert ${item.is_active ? 'paused' : 'activated'}`);
+      loadData();
+    } catch (e) {
+      toast.error('Failed to toggle alert');
+    }
   };
 
-  const handleDelete = async (item) => {
-    if (confirm('Delete this alert?')) { try { await api.deleteAlert(item.id); loadData(); } catch (e) { console.error(e); } }
+  const handleDelete = async (id) => {
+    await api.deleteAlert(id);
+  };
+
+  const handleSearch = (value) => { setSearch(value); setPage(1); };
+
+  const handleSort = (field) => {
+    if (sortField === field) { setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); }
+    else { setSortField(field); setSortOrder('asc'); }
+    setPage(1);
   };
 
   const columns = [
@@ -47,12 +84,35 @@ export default function Alerts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-red-50 rounded-lg"><Bell className="h-6 w-6 text-red-600" /></div>
-        <div><h1 className="text-2xl font-bold text-gray-900">Alerts</h1><p className="text-gray-500">Set up notifications for important metrics</p></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-red-50 rounded-lg"><Bell className="h-6 w-6 text-red-600" /></div>
+          <div><h1 className="text-2xl font-bold text-gray-900">Alerts</h1><p className="text-gray-500">Set up notifications for important metrics</p></div>
+        </div>
+        <button onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+          <Plus className="h-4 w-4" /> Create Alert
+        </button>
       </div>
 
-      <DataTable title="All Alerts" data={data} columns={columns} loading={loading} detailPath="/alerts" onAdd={() => setModalOpen(true)} addLabel="Create Alert" onDelete={handleDelete} emptyMessage="No alerts configured yet" />
+      <DataList
+        title="All Alerts"
+        icon={Bell}
+        iconColor="red"
+        items={items}
+        columns={columns}
+        loading={loading}
+        entityType="alerts"
+        detailType="alerts"
+        pagination={pagination}
+        onPageChange={setPage}
+        onSearch={handleSearch}
+        onSort={handleSort}
+        onDelete={handleDelete}
+        onRefresh={loadData}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        searchValue={search}
+      />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Create Alert">
         <form onSubmit={handleAdd} className="space-y-4">
