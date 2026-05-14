@@ -662,6 +662,41 @@ const api = {
   exportPDF(entityType) {
     return this.request(`${API_URL}/export-pdf/${entityType}`);
   },
+
+  // === New AI Features (custom non-CRUD) ===
+  aiCohortComparison(payload) {
+    return this.request(`${API_URL}/ai/cohort-comparison`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiSchemaAdvisor(payload) {
+    return this.request(`${API_URL}/ai/schema-advisor`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiDataGovernance(payload) {
+    return this.request(`${API_URL}/ai/data-governance`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiMultiSourceMerge(payload) {
+    return this.request(`${API_URL}/ai/multi-source-merge`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiAutoAlertRules(payload) {
+    return this.request(`${API_URL}/ai/auto-alert-rules`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiDataLineage(payload) {
+    return this.request(`${API_URL}/ai/data-lineage`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiQueryCostOptimizer(payload) {
+    return this.request(`${API_URL}/ai/query-cost-optimizer`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiForecastAccuracy(payload) {
+    return this.request(`${API_URL}/ai/forecast-accuracy`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiSqlFromIntent(payload) {
+    return this.request(`${API_URL}/ai/sql-from-intent`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiSuggestVisualizations(payload) {
+    return this.request(`${API_URL}/ai/suggest-visualizations`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  aiDetectAnomalies(payload) {
+    return this.request(`${API_URL}/ai/detect-anomalies`, { method: 'POST', body: JSON.stringify(payload) });
+  },
 };
 
 export default api;

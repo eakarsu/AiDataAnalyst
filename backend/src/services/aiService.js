@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import crypto from 'crypto';
+import cacheService from './cacheService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -8,7 +10,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../../../.env') });
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5';
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Extract JSON from AI response — handles code fences, leading text, any wrapping
@@ -285,6 +287,10 @@ export async function summarizeData(data, format = 'executive') {
 
 // ==================== AI QUERY OPTIMIZER ====================
 export async function optimizeQuery(query, schema, performance_context) {
+  const cacheKey = `ai:optimizeQuery:${crypto.createHash('md5').update(JSON.stringify({ query, schema })).digest('hex')}`;
+  const cached = cacheService.get(cacheKey);
+  if (cached) return cached;
+
   const messages = [
     {
       role: 'system',
@@ -318,10 +324,11 @@ IMPORTANT: Respond ONLY with the raw JSON object. No markdown, no code fences, n
     parsed.index_recommendations = (parsed.index_recommendations || []).map(r => typeof r === 'string' ? { table: 'N/A', columns: [r], type: 'btree', rationale: r } : r);
     parsed.warnings = parsed.warnings || [];
     parsed.best_practices = parsed.best_practices || [];
+    cacheService.set(cacheKey, parsed, 1800); // cache 30 minutes
     return parsed;
   }
   console.warn('[optimizeQuery] Fallback: could not parse AI response');
-  return {
+  const fallback = {
     optimized_query: query,
     optimization_type: 'analysis',
     improvement_percentage: 0,
@@ -333,6 +340,8 @@ IMPORTANT: Respond ONLY with the raw JSON object. No markdown, no code fences, n
     warnings: [],
     best_practices: []
   };
+  cacheService.set(cacheKey, fallback, 600);
+  return fallback;
 }
 
 // ==================== AI LOG ANALYZER ====================
@@ -476,6 +485,10 @@ IMPORTANT: Respond ONLY with the raw JSON object. No markdown, no code fences, n
 
 // ==================== AI DATA QUALITY SCORER ====================
 export async function scoreDataQuality(data_sample, schema_info, context) {
+  const cacheKey = `ai:scoreDataQuality:${crypto.createHash('md5').update(JSON.stringify({ data_sample, schema_info })).digest('hex')}`;
+  const cached = cacheService.get(cacheKey);
+  if (cached) return cached;
+
   const messages = [
     {
       role: 'system',
@@ -509,10 +522,11 @@ IMPORTANT: Respond ONLY with the raw JSON object. No markdown, no code fences, n
     parsed.analysis_sections = parsed.analysis_sections || [];
     parsed.strengths = parsed.strengths || [];
     parsed.data_profile = parsed.data_profile || {};
+    cacheService.set(cacheKey, parsed, 1800); // cache 30 minutes
     return parsed;
   }
   console.warn('[scoreDataQuality] Fallback: could not parse AI response');
-  return {
+  const fallback = {
     overall_score: 75,
     completeness_score: 80,
     accuracy_score: 75,
@@ -528,6 +542,8 @@ IMPORTANT: Respond ONLY with the raw JSON object. No markdown, no code fences, n
     strengths: [],
     data_profile: {}
   };
+  cacheService.set(cacheKey, fallback, 600);
+  return fallback;
 }
 
 // ==================== AI INSIGHT NARRATOR ====================
