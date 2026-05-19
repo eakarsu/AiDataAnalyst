@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import pool from '../config/database.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
 
 const router = Router();
 
@@ -113,8 +114,11 @@ router.post('/register', [
     const user = result.rows[0];
     const token = generateToken(user);
 
-    // In production, send verification email here
+    // Send verification email (graceful skip if SMTP not configured)
     console.log(`[EMAIL] Verification token for ${email}: ${verificationToken}`);
+    sendVerificationEmail(email, verificationToken).catch(err =>
+      console.error('[EMAIL] sendVerificationEmail error:', err.message)
+    );
 
     res.status(201).json({
       token,
@@ -167,6 +171,12 @@ router.post('/resend-verification', authenticateToken, async (req, res) => {
     );
 
     console.log(`[EMAIL] Resend verification for user ${req.user.id}: ${verificationToken}`);
+    const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [req.user.id]);
+    if (userResult.rows.length > 0) {
+      sendVerificationEmail(userResult.rows[0].email, verificationToken).catch(err =>
+        console.error('[EMAIL] sendVerificationEmail error:', err.message)
+      );
+    }
 
     res.json({ message: 'Verification email resent' });
   } catch (error) {
@@ -202,8 +212,11 @@ router.post('/forgot-password', [
       [userResult.rows[0].id, resetToken, expiresAt]
     );
 
-    // In production, send password reset email
+    // Send password reset email (graceful skip if SMTP not configured)
     console.log(`[EMAIL] Password reset token for ${email}: ${resetToken}`);
+    sendPasswordResetEmail(email, resetToken).catch(err =>
+      console.error('[EMAIL] sendPasswordResetEmail error:', err.message)
+    );
 
     res.json({ message: 'If that email exists, a reset link has been sent.' });
   } catch (error) {

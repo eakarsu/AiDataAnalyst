@@ -31,6 +31,21 @@ import DashboardGenerator from './pages/DashboardGenerator';
 import DataQuality from './pages/DataQuality';
 import Narratives from './pages/Narratives';
 import PipelineBuilder from './pages/PipelineBuilder';
+import AIFeaturesNew from './pages/AIFeaturesNew';
+import CustomViewsPage from './pages/CustomViewsPage';
+
+// // === Batch 02 Gaps & Frontend Mounts ===
+import CfAgenticSqlQueryGeneration from './pages/CfAgenticSqlQueryGeneration';
+import CfAutomatedInsightsGeneration from './pages/CfAutomatedInsightsGeneration';
+import CfPredictiveAnalytics from './pages/CfPredictiveAnalytics';
+import CfDataQualityAutomation from './pages/CfDataQualityAutomation';
+import CfDashboardGenerationFromIntent from './pages/CfDashboardGenerationFromIntent';
+import GapMissingQueryBuilderGenerateDashboardAnalyzeDataPredic from './pages/GapMissingQueryBuilderGenerateDashboardAnalyzeDataPredic';
+import GapNoDatabaseConnectorsSqlNosqlCloudDataWarehousesOnly from './pages/GapNoDatabaseConnectorsSqlNosqlCloudDataWarehousesOnly';
+import GapNoRealTimeDataStreaming from './pages/GapNoRealTimeDataStreaming';
+import GapNoDataQualityMonitoringEngine from './pages/GapNoDataQualityMonitoringEngine';
+import GapNoAdvancedVisualizationLibraryPlotlyD3DeckGlOnBacke from './pages/GapNoAdvancedVisualizationLibraryPlotlyD3DeckGlOnBacke';
+import GapNoSmsNotification from './pages/GapNoSmsNotification';
 
 function PrivateRoute({ children }) {
   const { token, loading } = useAuth();
@@ -87,9 +102,24 @@ function AppRoutes() {
         <Route path="data-quality" element={<DataQuality />} />
         <Route path="narratives" element={<Narratives />} />
         <Route path="pipeline-builder" element={<PipelineBuilder />} />
+        <Route path="ai-features" element={<AIFeaturesNew />} />
+        <Route path="custom-views" element={<CustomViewsPage />} />
         <Route path=":type/:id" element={<DetailView />} />
       </Route>
-    </Routes>
+    
+        {/* // === Batch 02 Gaps & Frontend Mounts === */}
+        <Route path="/cf/agentic-sql-query-generation" element={<CfAgenticSqlQueryGeneration />} />
+        <Route path="/cf/automated-insights-generation" element={<CfAutomatedInsightsGeneration />} />
+        <Route path="/cf/predictive-analytics" element={<CfPredictiveAnalytics />} />
+        <Route path="/cf/data-quality-automation" element={<CfDataQualityAutomation />} />
+        <Route path="/cf/dashboard-generation-from-intent" element={<CfDashboardGenerationFromIntent />} />
+        <Route path="/gap/missing-query-builder-generate-dashboard-analyze-data-predic" element={<GapMissingQueryBuilderGenerateDashboardAnalyzeDataPredic />} />
+        <Route path="/gap/no-database-connectors-sql-nosql-cloud-data-warehouses-only" element={<GapNoDatabaseConnectorsSqlNosqlCloudDataWarehousesOnly />} />
+        <Route path="/gap/no-real-time-data-streaming" element={<GapNoRealTimeDataStreaming />} />
+        <Route path="/gap/no-data-quality-monitoring-engine" element={<GapNoDataQualityMonitoringEngine />} />
+        <Route path="/gap/no-advanced-visualization-library-plotly-d3-deck-gl-on-backe" element={<GapNoAdvancedVisualizationLibraryPlotlyD3DeckGlOnBacke />} />
+        <Route path="/gap/no-sms-notification" element={<GapNoSmsNotification />} />
+      </Routes>
   );
 }
 

@@ -31,7 +31,8 @@ import {
   Wand2,
   ShieldCheck,
   BookOpen,
-  GitBranch
+  GitBranch,
+  Sparkles
 } from 'lucide-react';
 
 const navigation = [
@@ -47,6 +48,8 @@ const navigation = [
   { name: 'Data Quality', path: '/data-quality', icon: ShieldCheck },
   { name: 'Narratives', path: '/narratives', icon: BookOpen },
   { name: 'Pipeline Builder', path: '/pipeline-builder', icon: GitBranch },
+  { name: 'AI Features (New)', path: '/ai-features', icon: Sparkles },
+  { name: 'Analyst Views', path: '/custom-views', icon: Table2 },
   { name: 'Alerts', path: '/alerts', icon: Bell },
   { name: 'Predictions', path: '/predictions', icon: TrendingUp },
   { name: 'Anomalies', path: '/anomalies', icon: AlertTriangle },
