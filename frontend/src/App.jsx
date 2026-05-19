@@ -32,6 +32,7 @@ import DataQuality from './pages/DataQuality';
 import Narratives from './pages/Narratives';
 import PipelineBuilder from './pages/PipelineBuilder';
 import AIFeaturesNew from './pages/AIFeaturesNew';
+import CustomViewsPage from './pages/CustomViewsPage';
 
 // // === Batch 02 Gaps & Frontend Mounts ===
 import CfAgenticSqlQueryGeneration from './pages/CfAgenticSqlQueryGeneration';
@@ -102,6 +103,7 @@ function AppRoutes() {
         <Route path="narratives" element={<Narratives />} />
         <Route path="pipeline-builder" element={<PipelineBuilder />} />
         <Route path="ai-features" element={<AIFeaturesNew />} />
+        <Route path="custom-views" element={<CustomViewsPage />} />
         <Route path=":type/:id" element={<DetailView />} />
       </Route>
     

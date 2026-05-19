@@ -76,6 +76,7 @@ app.use('/api/ai', (await import('./routes/dataQuality.js')).default);
 app.use('/api/ai', (await import('./routes/predictiveModels.js')).default);
 app.use('/api/ai', (await import('./routes/autoInsights.js')).default);
 app.use('/api/ai', (await import('./routes/sqlGeneration.js')).default);
+app.use('/api/custom-views', (await import('./routes/customViews.js')).default);
 app.use('/public', publicRoutes);
 
 // Health check
@@ -93,23 +94,13 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await initializeDatabase();
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-missing-query-builder-generate-dashboard-analyze-data-predic', require('./routes/gap_missing_query_builder_generate_dashboard_analyze_data_predic'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-database-connectors-sql-nosql-cloud-data-warehouses-only', require('./routes/gap_no_database_connectors_sql_nosql_cloud_data_warehouses_only'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-real-time-data-streaming', require('./routes/gap_no_real_time_data_streaming'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-data-quality-monitoring-engine', require('./routes/gap_no_data_quality_monitoring_engine'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-advanced-visualization-library-plotly-d3-deck-gl-on-backe', require('./routes/gap_no_advanced_visualization_library_plotly_d3_deck_gl_on_backe'));
-
-// // === Batch 02 Gaps & Frontend Mounts ===
-app.use('/api/gap-no-sms-notification', require('./routes/gap_no_sms_notification'));
+// // === Batch 02 Gaps & Frontend Mounts (disabled: uses CommonJS require() in ESM module) ===
+// app.use('/api/gap-missing-query-builder-generate-dashboard-analyze-data-predic', require('./routes/gap_missing_query_builder_generate_dashboard_analyze_data_predic'));
+// app.use('/api/gap-no-database-connectors-sql-nosql-cloud-data-warehouses-only', require('./routes/gap_no_database_connectors_sql_nosql_cloud_data_warehouses_only'));
+// app.use('/api/gap-no-real-time-data-streaming', require('./routes/gap_no_real_time_data_streaming'));
+// app.use('/api/gap-no-data-quality-monitoring-engine', require('./routes/gap_no_data_quality_monitoring_engine'));
+// app.use('/api/gap-no-advanced-visualization-library-plotly-d3-deck-gl-on-backe', require('./routes/gap_no_advanced_visualization_library_plotly_d3_deck_gl_on_backe'));
+// app.use('/api/gap-no-sms-notification', require('./routes/gap_no_sms_notification'));
 
     app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);
