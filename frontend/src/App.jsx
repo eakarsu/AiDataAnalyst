@@ -33,6 +33,7 @@ import Narratives from './pages/Narratives';
 import PipelineBuilder from './pages/PipelineBuilder';
 import AIFeaturesNew from './pages/AIFeaturesNew';
 import CustomViewsPage from './pages/CustomViewsPage';
+import SemanticMetricDrift from './pages/SemanticMetricDrift';
 
 // // === Batch 02 Gaps & Frontend Mounts ===
 import CfAgenticSqlQueryGeneration from './pages/CfAgenticSqlQueryGeneration';
@@ -46,6 +47,28 @@ import GapNoRealTimeDataStreaming from './pages/GapNoRealTimeDataStreaming';
 import GapNoDataQualityMonitoringEngine from './pages/GapNoDataQualityMonitoringEngine';
 import GapNoAdvancedVisualizationLibraryPlotlyD3DeckGlOnBacke from './pages/GapNoAdvancedVisualizationLibraryPlotlyD3DeckGlOnBacke';
 import GapNoSmsNotification from './pages/GapNoSmsNotification';
+
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
+// Warehouse Feature Pages
+import WhIngestionConnectors from './pages/wh/WhIngestionConnectors';
+import WhParquetIceberg from './pages/wh/WhParquetIceberg';
+import WhQueryEngine from './pages/wh/WhQueryEngine';
+import WhTransformDbt from './pages/wh/WhTransformDbt';
+import WhSemanticLayer from './pages/wh/WhSemanticLayer';
+import WhLineage from './pages/wh/WhLineage';
+import WhAccessPolicies from './pages/wh/WhAccessPolicies';
+import WhMaterializedViews from './pages/wh/WhMaterializedViews';
+
+// Spreadsheet Feature Pages
+import SsCellGrid from './pages/ss/SsCellGrid';
+import SsFormulaEngine from './pages/ss/SsFormulaEngine';
+import SsAiFillDown from './pages/ss/SsAiFillDown';
+import SsNaturalLanguageFormula from './pages/ss/SsNaturalLanguageFormula';
+import SsPivotEngine from './pages/ss/SsPivotEngine';
+import SsChartsApi from './pages/ss/SsChartsApi';
+import SsCollabPresence from './pages/ss/SsCollabPresence';
 
 function PrivateRoute({ children }) {
   const { token, loading } = useAuth();
@@ -67,6 +90,9 @@ function PrivateRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
+        <Route path="/codex/custom-viz" element={<CodexCustomVizFeature />} />
+        <Route path="/codex/operations" element={<CodexOperationsFeature />} />
+
       <Route path="/login" element={<Login />} />
       <Route path="/public/dashboard/:token" element={<PublicDashboard />} />
       <Route
@@ -104,6 +130,24 @@ function AppRoutes() {
         <Route path="pipeline-builder" element={<PipelineBuilder />} />
         <Route path="ai-features" element={<AIFeaturesNew />} />
         <Route path="custom-views" element={<CustomViewsPage />} />
+        <Route path="semantic-metric-drift" element={<SemanticMetricDrift />} />
+        {/* Data Warehouse Routes */}
+        <Route path="wh/ingestion-connectors" element={<WhIngestionConnectors />} />
+        <Route path="wh/parquet-iceberg" element={<WhParquetIceberg />} />
+        <Route path="wh/query-engine" element={<WhQueryEngine />} />
+        <Route path="wh/transform-dbt" element={<WhTransformDbt />} />
+        <Route path="wh/semantic-layer" element={<WhSemanticLayer />} />
+        <Route path="wh/lineage" element={<WhLineage />} />
+        <Route path="wh/access-policies" element={<WhAccessPolicies />} />
+        <Route path="wh/materialized-views" element={<WhMaterializedViews />} />
+        {/* Spreadsheet Routes */}
+        <Route path="ss/cell-grid" element={<SsCellGrid />} />
+        <Route path="ss/formula-engine" element={<SsFormulaEngine />} />
+        <Route path="ss/ai-fill-down" element={<SsAiFillDown />} />
+        <Route path="ss/natural-language-formula" element={<SsNaturalLanguageFormula />} />
+        <Route path="ss/pivot-engine" element={<SsPivotEngine />} />
+        <Route path="ss/charts-api" element={<SsChartsApi />} />
+        <Route path="ss/collab-presence" element={<SsCollabPresence />} />
         <Route path=":type/:id" element={<DetailView />} />
       </Route>
     

@@ -32,7 +32,13 @@ import {
   ShieldCheck,
   BookOpen,
   GitBranch,
-  Sparkles
+  Sparkles,
+  PlugZap,
+  Network,
+  Layers,
+  Grid3x3,
+  Code,
+  PieChart
 } from 'lucide-react';
 
 const navigation = [
@@ -62,6 +68,27 @@ const navigation = [
   { name: 'Data Explorer', path: '/data-explorer', icon: Table2 },
   { name: 'Team', path: '/team', icon: Users },
   { name: 'Settings', path: '/settings', icon: Settings },
+];
+
+const warehouseNav = [
+  { name: 'Ingestion Connectors', path: '/wh/ingestion-connectors', icon: PlugZap },
+  { name: 'Parquet / Iceberg', path: '/wh/parquet-iceberg', icon: Table2 },
+  { name: 'Query Engine', path: '/wh/query-engine', icon: Search },
+  { name: 'dbt Transforms', path: '/wh/transform-dbt', icon: GitBranch },
+  { name: 'Semantic Layer', path: '/wh/semantic-layer', icon: BookOpen },
+  { name: 'Data Lineage', path: '/wh/lineage', icon: Network },
+  { name: 'Access Policies', path: '/wh/access-policies', icon: ShieldCheck },
+  { name: 'Materialized Views', path: '/wh/materialized-views', icon: Layers },
+];
+
+const spreadsheetNav = [
+  { name: 'Cell Grid', path: '/ss/cell-grid', icon: Grid3x3 },
+  { name: 'Formula Engine', path: '/ss/formula-engine', icon: Code },
+  { name: 'AI Fill Down', path: '/ss/ai-fill-down', icon: Wand2 },
+  { name: 'NL Formula', path: '/ss/natural-language-formula', icon: MessageSquare },
+  { name: 'Pivot Engine', path: '/ss/pivot-engine', icon: PieChart },
+  { name: 'Charts API', path: '/ss/charts-api', icon: BarChart3 },
+  { name: 'Collab Presence', path: '/ss/collab-presence', icon: Users },
 ];
 
 export default function Layout() {
@@ -148,6 +175,100 @@ export default function Layout() {
                 </li>
               ))}
             </ul>
+
+            {/* Data Warehouse Section */}
+            {sidebarOpen && (
+              <div className="mt-6">
+                <p className="px-3 mb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Data Warehouse</p>
+                <ul className="space-y-1">
+                  {warehouseNav.map((item) => (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }`
+                        }
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="text-sm font-medium">{item.name}</span>
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {!sidebarOpen && (
+              <ul className="mt-4 space-y-1">
+                {warehouseNav.map((item) => (
+                  <li key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        }`
+                      }
+                      title={item.name}
+                    >
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Spreadsheet Section */}
+            {sidebarOpen && (
+              <div className="mt-6">
+                <p className="px-3 mb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Spreadsheet</p>
+                <ul className="space-y-1">
+                  {spreadsheetNav.map((item) => (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                            isActive
+                              ? 'bg-green-50 text-green-700'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          }`
+                        }
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="text-sm font-medium">{item.name}</span>
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {!sidebarOpen && (
+              <ul className="mt-4 space-y-1">
+                {spreadsheetNav.map((item) => (
+                  <li key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        }`
+                      }
+                      title={item.name}
+                    >
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
           </nav>
 
           {/* User section */}

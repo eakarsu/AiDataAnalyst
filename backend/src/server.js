@@ -13,6 +13,8 @@ import publicRoutes from './routes/public.js';
 import aiNewRoutes from './routes/aiNew.js';
 import { aiRateLimiter } from './middleware/rateLimiter.js';
 import { initializeDatabase } from './models/schema.js';
+import { initializeWarehouseSchema } from './models/warehouse.js';
+import { initializeSpreadsheetSchema } from './models/spreadsheet.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -77,6 +79,27 @@ app.use('/api/ai', (await import('./routes/predictiveModels.js')).default);
 app.use('/api/ai', (await import('./routes/autoInsights.js')).default);
 app.use('/api/ai', (await import('./routes/sqlGeneration.js')).default);
 app.use('/api/custom-views', (await import('./routes/customViews.js')).default);
+
+// Warehouse routes
+app.use('/api/wh/ingestion-connectors', (await import('./routes/whFeat_ingestionConnectors.js')).default);
+app.use('/api/wh/parquet-iceberg', (await import('./routes/whFeat_parquetIceberg.js')).default);
+app.use('/api/wh/query-engine', (await import('./routes/whFeat_queryEngine.js')).default);
+app.use('/api/wh/transform-dbt', (await import('./routes/whFeat_transformDbt.js')).default);
+app.use('/api/wh/semantic-layer', (await import('./routes/whFeat_semanticLayer.js')).default);
+app.use('/api/wh/lineage', (await import('./routes/whFeat_lineage.js')).default);
+app.use('/api/wh/access-policies', (await import('./routes/whFeat_accessPolicies.js')).default);
+app.use('/api/wh/materialized-views', (await import('./routes/whFeat_materializedViews.js')).default);
+
+// Spreadsheet routes
+app.use('/api/ss/cell-grid', (await import('./routes/ssFeat_cellGrid.js')).default);
+app.use('/api/ss/formula-engine', (await import('./routes/ssFeat_formulaEngine.js')).default);
+app.use('/api/ss/ai-fill-down', (await import('./routes/ssFeat_aiFillDown.js')).default);
+app.use('/api/ss/nl-formula', (await import('./routes/ssFeat_naturalLanguageFormula.js')).default);
+app.use('/api/ss/pivot-engine', (await import('./routes/ssFeat_pivotEngine.js')).default);
+app.use('/api/ss/charts', (await import('./routes/ssFeat_chartsApi.js')).default);
+app.use('/api/ss/collab-presence', (await import('./routes/ssFeat_collabPresence.js')).default);
+app.use('/api/semantic-metric-drift', (await import('./routes/semanticMetricDrift.js')).default);
+
 app.use('/public', publicRoutes);
 
 // Health check
@@ -94,6 +117,8 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await initializeDatabase();
+    await initializeWarehouseSchema();
+    await initializeSpreadsheetSchema();
 // // === Batch 02 Gaps & Frontend Mounts (disabled: uses CommonJS require() in ESM module) ===
 // app.use('/api/gap-missing-query-builder-generate-dashboard-analyze-data-predic', require('./routes/gap_missing_query_builder_generate_dashboard_analyze_data_predic'));
 // app.use('/api/gap-no-database-connectors-sql-nosql-cloud-data-warehouses-only', require('./routes/gap_no_database_connectors_sql_nosql_cloud_data_warehouses_only'));
