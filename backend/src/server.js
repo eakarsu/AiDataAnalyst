@@ -1,139 +1,59 @@
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { createPool } from './governance/db.js';
+import { assertAuthConfiguration, authenticate } from './governance/auth.js';
+import { createAuthRouter, provisionTestIdentity } from './governance/authRoutes.js';
+import { createGovernanceRouter } from './governance/routes.js';
+import { AnalystError } from './governance/domain.js';
 
-import authRoutes from './routes/auth.js';
-import apiRoutes from './routes/api.js';
-import uploadRoutes from './routes/upload.js';
-import publicRoutes from './routes/public.js';
-import aiNewRoutes from './routes/aiNew.js';
-import { aiRateLimiter } from './middleware/rateLimiter.js';
-import { initializeDatabase } from './models/schema.js';
-import { initializeWarehouseSchema } from './models/warehouse.js';
-import { initializeSpreadsheetSchema } from './models/spreadsheet.js';
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+dotenv.config({ path: path.join(projectRoot, '.env') });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config({ path: join(__dirname, '../../.env') });
-
-const app = express();
-const PORT = process.env.BACKEND_PORT || 3001;
-
-// Helmet security headers
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: false,
-}));
-
-// Rate limiting
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500,
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Too many authentication attempts, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use(generalLimiter);
-
-// Middleware
-const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5173')
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean);
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true
-}));
-app.use(express.json());
-
-// Static file serving for exports
-app.use('/exports', express.static(join(__dirname, '../exports')));
-
-// Routes
-app.use('/auth', authLimiter, authRoutes);
-app.use('/api', apiRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/ai', aiRateLimiter, aiNewRoutes);
-
-
-
-
-
-app.use('/api/ai', (await import('./routes/dashboardFromIntent.js')).default);
-app.use('/api/ai', (await import('./routes/dataQuality.js')).default);
-app.use('/api/ai', (await import('./routes/predictiveModels.js')).default);
-app.use('/api/ai', (await import('./routes/autoInsights.js')).default);
-app.use('/api/ai', (await import('./routes/sqlGeneration.js')).default);
-app.use('/api/custom-views', (await import('./routes/customViews.js')).default);
-
-// Warehouse routes
-app.use('/api/wh/ingestion-connectors', (await import('./routes/whFeat_ingestionConnectors.js')).default);
-app.use('/api/wh/parquet-iceberg', (await import('./routes/whFeat_parquetIceberg.js')).default);
-app.use('/api/wh/query-engine', (await import('./routes/whFeat_queryEngine.js')).default);
-app.use('/api/wh/transform-dbt', (await import('./routes/whFeat_transformDbt.js')).default);
-app.use('/api/wh/semantic-layer', (await import('./routes/whFeat_semanticLayer.js')).default);
-app.use('/api/wh/lineage', (await import('./routes/whFeat_lineage.js')).default);
-app.use('/api/wh/access-policies', (await import('./routes/whFeat_accessPolicies.js')).default);
-app.use('/api/wh/materialized-views', (await import('./routes/whFeat_materializedViews.js')).default);
-
-// Spreadsheet routes
-app.use('/api/ss/cell-grid', (await import('./routes/ssFeat_cellGrid.js')).default);
-app.use('/api/ss/formula-engine', (await import('./routes/ssFeat_formulaEngine.js')).default);
-app.use('/api/ss/ai-fill-down', (await import('./routes/ssFeat_aiFillDown.js')).default);
-app.use('/api/ss/nl-formula', (await import('./routes/ssFeat_naturalLanguageFormula.js')).default);
-app.use('/api/ss/pivot-engine', (await import('./routes/ssFeat_pivotEngine.js')).default);
-app.use('/api/ss/charts', (await import('./routes/ssFeat_chartsApi.js')).default);
-app.use('/api/ss/collab-presence', (await import('./routes/ssFeat_collabPresence.js')).default);
-app.use('/api/semantic-metric-drift', (await import('./routes/semanticMetricDrift.js')).default);
-
-app.use('/public', publicRoutes);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Error handling
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Start server
-async function start() {
-  try {
-    await initializeDatabase();
-    await initializeWarehouseSchema();
-    await initializeSpreadsheetSchema();
-// // === Batch 02 Gaps & Frontend Mounts (disabled: uses CommonJS require() in ESM module) ===
-// app.use('/api/gap-missing-query-builder-generate-dashboard-analyze-data-predic', require('./routes/gap_missing_query_builder_generate_dashboard_analyze_data_predic'));
-// app.use('/api/gap-no-database-connectors-sql-nosql-cloud-data-warehouses-only', require('./routes/gap_no_database_connectors_sql_nosql_cloud_data_warehouses_only'));
-// app.use('/api/gap-no-real-time-data-streaming', require('./routes/gap_no_real_time_data_streaming'));
-// app.use('/api/gap-no-data-quality-monitoring-engine', require('./routes/gap_no_data_quality_monitoring_engine'));
-// app.use('/api/gap-no-advanced-visualization-library-plotly-d3-deck-gl-on-backe', require('./routes/gap_no_advanced_visualization_library_plotly_d3_deck_gl_on_backe'));
-// app.use('/api/gap-no-sms-notification', require('./routes/gap_no_sms_notification'));
-
-    app.listen(PORT, () => {
-      console.log(`Backend server running on http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+export function assertConfiguration(env = process.env) {
+  assertAuthConfiguration(env);
+  if (!env.CLIENT_URL) throw new Error('CLIENT_URL is required');
 }
 
-start();
+export function createApp({ pool, env = process.env }) {
+  assertConfiguration(env);
+  const app = express();
+  app.disable('x-powered-by');
+  app.use(helmet());
+  app.use(cors({ origin: env.CLIENT_URL, credentials: true, methods: ['GET', 'POST'] }));
+  app.use(express.json({ limit: '2mb' }));
+  app.use(rateLimit({ windowMs: 60000, limit: Number(env.RATE_LIMIT_PER_MINUTE || 120), standardHeaders: true }));
+  const health = async (_req, res, next) => { try { await pool.query('SELECT 1'); res.json({ status: 'ok' }); } catch (error) { next(error); } };
+  app.get('/healthz', health);
+  app.get('/api/health', health);
+  app.use('/api/auth', createAuthRouter(pool, env));
+  app.use('/api/governance', authenticate(pool, env), createGovernanceRouter(pool));
+  app.use((_req, res) => res.status(404).json({ error: 'not_found' }));
+  app.use((error, _req, res, _next) => {
+    if (error instanceof AnalystError) {
+      const status = error.code.endsWith('_not_found') ? 404 : error.code.includes('blocked') || error.code.includes('conflict') ? 409 : 422;
+      return res.status(status).json({ error: error.code, message: error.message, details: error.details });
+    }
+    console.error({ name: error.name, message: error.message });
+    return res.status(500).json({ error: 'internal_error' });
+  });
+  return app;
+}
+
+async function main() {
+  assertConfiguration(process.env);
+  const pool = createPool(process.env);
+  await provisionTestIdentity(pool, process.env);
+  const server = createApp({ pool, env: process.env }).listen(Number(process.env.BACKEND_PORT || 3001), process.env.BIND_HOST || '127.0.0.1');
+  const shutdown = () => server.close(async () => { await pool.end(); process.exit(0); });
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
+}
+
+const invokedPath = process.argv[1] ? fs.realpathSync(process.argv[1]) : '';
+if (invokedPath === fileURLToPath(import.meta.url)) main().catch(error => { console.error(error.message); process.exit(1); });

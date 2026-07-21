@@ -7,8 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed.js",
-    "seed:force": "node src/seed.js --force"
+    "test": "node --test src/governance/tests/*.test.js",
+    "migrate": "../scripts/migrate.sh",
+    "seed": "../scripts/seed-development.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

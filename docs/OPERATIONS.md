@@ -1,0 +1,15 @@
+# Governed Data Analyst Operations
+
+The supported API is `/api/governance`. Sources are immutable versions with repository authority, observation time, SHA-256, object-storage key, retention, and document subjects. Resumable connectors use cursor/page digests; parsing pins parser/location provenance; duplicate chunks are digestable and prompt-injection-like content is quarantined before indexing. Indexing and provider work use payload-bound idempotency, leases, five bounded retries, dead letters, and typed non-secret receipts.
+
+Questions snapshot caller groups/permissions, retrieval/model versions, and cost limits. Only fresh, authorized, non-quarantined chunks may be cited. The answer abstains on insufficient confidence, no current evidence, or unresolved conflict. Citations resolve source/version/chunk/location/digest; document text is evidence, never executable instruction. Feedback is immutable disposition/correction data.
+
+Visualization replaces the generated gap with a durable, library-neutral Plotly/D3/deck.gl spec pinned to dataset/schema digests. It validates authorized fields, row/cost limits, encodings, filters, aggregations, and accessibility; execution requires reviewed query-plan and spec digests, then queues a renderer. A queued or failed render is never presented as complete.
+
+Install with `scripts/bootstrap.sh`; configure `.env`; apply reviewed migration via `./start.sh migrate`; provision identities/connectors/policies without demo data; run `./start.sh check` then `./start.sh start`. Startup never installs, seeds, creates databases, migrates, starts services, kills processes, or serves the existing export directory publicly. Production requires verified database TLS, encrypted object/index stores, and secret-manager credential references.
+
+On source deletion, revoke query access first, delete/tombstone object/chunks/vectors, expire derived answers/visualizations, propagate to the repository, and retain receipts; legal hold blocks deletion. Reconcile ambiguous repository/index/model/renderer timeouts before retry. Alert on connector gaps, quarantined injection, stale evidence, citation failures, permission denials, evaluation regression, cost/rate limits, dead letters, and deletion deadlines. Backups restored in isolation must reapply deletion tombstones before serving.
+
+## External validation still required
+
+Certify real repositories/APIs, object storage, parsers, indexes, model and renderer adapters; apply migration and test RLS/encryption with production identities; run versioned representative and adversarial evaluations for recall, faithfulness, citation resolution, freshness, conflict abstention, injection resistance, permission isolation, cost, and latency; test browser/accessibility/load/security/backup/restore/deletion/incident recovery; and obtain privacy, data-governance, security, accessibility, and domain-owner approval. Credentials, authoritative data, providers, infrastructure, and professional validation remain external.
