@@ -2,6 +2,12 @@ import pool from './config/database.js';
 import { initializeDatabase } from './models/schema.js';
 import bcrypt from 'bcryptjs';
 
+function requireDemoPassword() {
+  const password = process.env.DEMO_PASSWORD || process.env.SEED_DEMO_PASSWORD || process.env.DEMO_SEED_PASSWORD || '';
+  if (password.length < 12 || password.length > 1024) throw new Error('DEMO_PASSWORD must contain 12-1024 characters');
+  return password;
+}
+
 async function seedDatabase() {
   const client = await pool.connect();
 
@@ -26,7 +32,7 @@ async function seedDatabase() {
     await client.query('TRUNCATE users, data_sources, dashboards, reports, ai_insights, queries, alerts, predictions, anomalies, data_exports, scheduled_jobs, collaborations, activity_log, templates, integrations, query_optimizations, log_entries, log_analysis, dashboard_configs, data_quality_scores, insight_narratives, password_resets RESTART IDENTITY CASCADE');
 
     console.log('Seeding users...');
-    const hashedPassword = await bcrypt.hash('demo123456', 10);
+    const hashedPassword = await bcrypt.hash(requireDemoPassword(), 10);
     const userResult = await client.query(`
       INSERT INTO users (email, password, name, role, email_verified) VALUES
       ('demo@aianalyst.com', $1, 'Demo User', 'admin', true),
@@ -581,7 +587,7 @@ async function seedDatabase() {
     `, [userId]);
 
     console.log('Database seeded successfully!');
-    console.log('Demo credentials: demo@aianalyst.com / demo123456');
+    console.log('Demo login users provisioned from the local environment.');
 
   } catch (error) {
     console.error('Error seeding database:', error);

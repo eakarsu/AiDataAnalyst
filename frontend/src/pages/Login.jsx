@@ -41,8 +41,8 @@ export default function Login() {
       setEmail(credentials.email);
       setPassword(credentials.password);
     } catch (err) {
-      setEmail('demo@aianalyst.com');
-      setPassword('demo123456');
+      setEmail(import.meta.env.VITE_DEMO_EMAIL || '');
+      setPassword(import.meta.env.VITE_DEMO_PASSWORD || '');
     }
   };
 
