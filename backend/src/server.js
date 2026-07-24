@@ -32,7 +32,7 @@ export function createApp({ pool, env = process.env }) {
   app.get('/healthz', health);
   app.get('/api/health', health);
   app.use('/api/auth', createAuthRouter(pool, env));
-  app.use('/api/governance', authenticate(pool, env), createGovernanceRouter(pool));
+  app.use('/api/governance', authenticate(pool, env), createGovernanceRouter(pool, env));
   app.use((_req, res) => res.status(404).json({ error: 'not_found' }));
   app.use((error, _req, res, _next) => {
     if (error instanceof AnalystError) {

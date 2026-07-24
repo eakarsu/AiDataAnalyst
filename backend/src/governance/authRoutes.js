@@ -55,10 +55,11 @@ export function createAuthRouter(pool, env = process.env) {
 }
 
 export async function provisionTestIdentity(pool, env = process.env) {
-  if (env.NODE_ENV !== 'test') return;
+  if (env.NODE_ENV !== 'test' && env.ALLOW_DESTRUCTIVE_SEED !== 'true') return;
   if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 12) throw new Error('Explicit strong test admin credentials are required');
   const passwordHash = await bcrypt.hash(env.ADMIN_PASSWORD, 12);
-  const tenant = await pool.query("INSERT INTO analyst_tenants(name,status) VALUES($1,'active') RETURNING id", ['Runtime Acceptance Tenant']);
+  let tenant = await pool.query("SELECT id FROM analyst_tenants WHERE name=$1 AND status='active' ORDER BY created_at LIMIT 1", ['Runtime Acceptance Tenant']);
+  if (!tenant.rowCount) tenant = await pool.query("INSERT INTO analyst_tenants(name,status) VALUES($1,'active') RETURNING id", ['Runtime Acceptance Tenant']);
   const user = await pool.query(
     `INSERT INTO analyst_users(email,status,password_hash) VALUES($1,'active',$2)
      ON CONFLICT(email) DO UPDATE SET status='active',password_hash=EXCLUDED.password_hash RETURNING id`,
