@@ -76,7 +76,7 @@ start)
   trap cleanup INT TERM EXIT
   (cd "$project_dir/backend" && exec env BACKEND_PORT="$BACKEND_PORT" PORT="$BACKEND_PORT" npm start) &
   backend_pid=$!
-  (cd "$project_dir/frontend" && exec npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT") &
+  (cd "$project_dir/frontend" && exec env BACKEND_PORT="$BACKEND_PORT" FRONTEND_PORT="$FRONTEND_PORT" npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT") &
   frontend_pid=$!
   wait "$backend_pid"
   ;;

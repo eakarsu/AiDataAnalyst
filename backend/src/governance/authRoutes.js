@@ -55,15 +55,17 @@ export function createAuthRouter(pool, env = process.env) {
 }
 
 export async function provisionTestIdentity(pool, env = process.env) {
-  if (env.NODE_ENV !== 'test' && env.ALLOW_DESTRUCTIVE_SEED !== 'true') return;
-  if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 12) throw new Error('Explicit strong test admin credentials are required');
-  const passwordHash = await bcrypt.hash(env.ADMIN_PASSWORD, 12);
+  if (env.NODE_ENV !== 'test' && env.ALLOW_DESTRUCTIVE_SEED !== 'true' && env.ENABLE_DEMO_CREDENTIAL_AUTOFILL !== 'true') return;
+  const email = env.DEMO_EMAIL || env.SEED_ADMIN_EMAIL || env.ADMIN_EMAIL;
+  const password = env.DEMO_PASSWORD || env.SEED_ADMIN_PASSWORD || env.ADMIN_PASSWORD;
+  if (!email || !password || password.length < 12) throw new Error('Explicit strong test admin credentials are required');
+  const passwordHash = await bcrypt.hash(password, 12);
   let tenant = await pool.query("SELECT id FROM analyst_tenants WHERE name=$1 AND status='active' ORDER BY created_at LIMIT 1", ['Runtime Acceptance Tenant']);
   if (!tenant.rowCount) tenant = await pool.query("INSERT INTO analyst_tenants(name,status) VALUES($1,'active') RETURNING id", ['Runtime Acceptance Tenant']);
   const user = await pool.query(
     `INSERT INTO analyst_users(email,status,password_hash) VALUES($1,'active',$2)
      ON CONFLICT(email) DO UPDATE SET status='active',password_hash=EXCLUDED.password_hash RETURNING id`,
-    [env.ADMIN_EMAIL, passwordHash],
+    [email, passwordHash],
   );
   await pool.query(
     `INSERT INTO analyst_memberships(tenant_id,user_id,role,groups,permissions,status)

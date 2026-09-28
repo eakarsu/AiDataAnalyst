@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token) {
       api.setToken(token);
-      api.getStats()
+      api.getMe()
         .then(() => {
           const userData = JSON.parse(localStorage.getItem('user') || '{}');
           setUser(userData);

@@ -217,7 +217,7 @@ export default function Login() {
                 className="mt-4 w-full py-3 px-4 border-2 border-dashed border-primary-300 bg-primary-50 hover:bg-primary-100 text-primary-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Sparkles className="h-5 w-5" />
-                <span>Auto-fill Demo Credentials</span>
+                <span>Auto Fill Demo Credentials</span>
               </button>
             </div>
 

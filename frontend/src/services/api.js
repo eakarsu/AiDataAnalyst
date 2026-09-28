@@ -1,5 +1,5 @@
 const API_URL = '/api';
-const AUTH_URL = '/auth';
+const AUTH_URL = '/api/auth';
 
 let authToken = null;
 
