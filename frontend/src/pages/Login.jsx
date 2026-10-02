@@ -4,6 +4,47 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { Brain, Eye, EyeOff, Sparkles, BarChart3, Zap, Shield, Lock, Mail } from 'lucide-react';
 
+function __demoAutofill() {
+  (async () => {
+    let email = "";
+    let password = "";
+    try {
+      const response = await fetch("/api/auth/demo-credentials", { cache: "no-store" });
+      if (response.ok) {
+        const data = await response.json();
+        email = data.email || data.username || "";
+        password = data.password || "";
+      }
+    } catch (error) {
+      /* fall back to build-time credentials below */
+    }
+    if (!email || !password) {
+      const env = (typeof process !== "undefined" && process.env) ? process.env : {};
+      email = email || env.REACT_APP_DEMO_EMAIL || env.VITE_DEMO_EMAIL || "";
+      password = password || env.REACT_APP_DEMO_PASSWORD || env.VITE_DEMO_PASSWORD || "";
+    }
+    const form = document.querySelector("form");
+    const setValue = (element, value) => {
+      if (!element) return;
+      const prototype = element.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(prototype, "value").set;
+      setter.call(element, value);
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    const scope = form || document;
+    setValue(scope.querySelector('input[type="email"], input[name="email"], input[name="username"]') || scope.querySelectorAll("input")[0], email);
+    setValue(scope.querySelector('input[type="password"], input[name="password"]') || scope.querySelectorAll("input")[1], password);
+    window.setTimeout(() => {
+      if (form && typeof form.requestSubmit === "function") {
+        form.requestSubmit();
+      } else {
+        const submit = scope.querySelector('button[type="submit"], input[type="submit"]');
+        if (submit) submit.click();
+      }
+    }, 50);
+  })();
+}
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -213,7 +254,7 @@ export default function Login() {
               </div>
 
               <button
-                onClick={handleAutoFill}
+                onClick={__demoAutofill}
                 className="mt-4 w-full py-3 px-4 border-2 border-dashed border-primary-300 bg-primary-50 hover:bg-primary-100 text-primary-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Sparkles className="h-5 w-5" />
